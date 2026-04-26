@@ -23,7 +23,7 @@ read_env_value() {
 }
 
 notify_tg() {
-  local text="$1"
+  local text="$(printf '%b' "$1")"
   local token="${BOT_TOKEN:-}"
   local chat_id="${ADMIN_USER_ID:-}"
   if [[ -z "${token}" ]]; then
@@ -98,15 +98,23 @@ else
 fi
 
 expected_hash="$(awk '{print $1}' "${BIN_NAME}.sha256" | tr -d ' \r\n')"
+if command -v sha256sum >/dev/null 2>&1; then
+  downloaded_hash="$(sha256sum "${BIN_NAME}" | awk '{print $1}' | tr -d ' \r\n')"
+else
+  downloaded_hash="$(shasum -a 256 "${BIN_NAME}" | awk '{print $1}' | tr -d ' \r\n')"
+fi
+
 if [[ -f "${RELEASE_DIR}/${BIN_NAME}" ]]; then
   if command -v sha256sum >/dev/null 2>&1; then
     current_hash="$(sha256sum "${RELEASE_DIR}/${BIN_NAME}" | awk '{print $1}' | tr -d ' \r\n')"
   else
     current_hash="$(shasum -a 256 "${RELEASE_DIR}/${BIN_NAME}" | awk '{print $1}' | tr -d ' \r\n')"
   fi
-  if [[ -n "${expected_hash}" && "${current_hash}" == "${expected_hash}" ]]; then
+  echo "[update] local_hash=${current_hash}"
+  echo "[update] remote_hash=${downloaded_hash}"
+  if [[ -n "${downloaded_hash}" && "${current_hash}" == "${downloaded_hash}" ]]; then
     echo "[update] already latest binary, skip replace/restart"
-    notify_tg "ℹ️ 买家已是最新版本\n版本: ${LATEST_TAG:-未知}\n无需重复更新"
+    notify_tg "ℹ️ 买家已是最新版本\n版本: ${LATEST_TAG:-未知}\n远端哈希: ${downloaded_hash}\n本地哈希: ${current_hash}\n无需重复更新"
     exit 0
   fi
 fi

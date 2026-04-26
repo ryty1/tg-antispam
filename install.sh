@@ -461,7 +461,7 @@ cmd_uninstall() {
 
 show_help() {
   cat <<'EOF'
-买家一键部署脚本
+一键部署脚本
 
 用法:
   bash install.sh                    打开交互菜单（默认）

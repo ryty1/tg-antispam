@@ -136,6 +136,22 @@ prompt_value() {
   fi
 }
 
+prompt_keep_existing() {
+  local prompt_text="$1"
+  local existing_value="$2"
+  local input=""
+  local hint=""
+  if [[ -n "${existing_value}" ]]; then
+    hint="（留空保持当前）"
+  fi
+  read -r -p "${prompt_text}${hint}: " input || true
+  if [[ -z "${input}" ]]; then
+    printf "%s" "${existing_value}"
+  else
+    printf "%s" "${input}"
+  fi
+}
+
 normalize_base_url() {
   local raw="$1"
   raw="${raw%/}"
@@ -176,23 +192,23 @@ configure_env_interactive() {
   local webhook_path
   local webhook_url
 
-  log "开始在线配置 .env（只问必要项）"
-  bot_token="$(prompt_value "请输入机器人 BOT_TOKEN（在 @BotFather 获取）" "${existing_bot_token}")"
-  admin_user_id="$(prompt_value "请输入管理员 Telegram Chat ID（数字）" "${existing_admin_user_id}")"
-  license_server_url="$(prompt_value "请输入授权服务器地址（例如 https://license.example.com）" "${existing_license_server_url}")"
-  license_key="$(prompt_value "请输入授权码 LICENSE_KEY" "${existing_license_key}")"
-  web_base_url="$(prompt_value "请输入后台域名 WEB_BASE_URL（例如 https://bot.example.com）" "${existing_web_base_url}")"
-  github_token="$(prompt_value "可选：GitHub Token（避免 API 限流，回车跳过）" "${existing_github_token}")"
+  log "开始在线配置（只问必要项）"
+  bot_token="$(prompt_keep_existing "请输入机器人令牌（在 @BotFather 获取）" "${existing_bot_token}")"
+  admin_user_id="$(prompt_keep_existing "请输入管理员 Chat ID（纯数字）" "${existing_admin_user_id}")"
+  license_server_url="$(prompt_keep_existing "请输入授权服务器地址（示例：https://license.example.com）" "${existing_license_server_url}")"
+  license_key="$(prompt_keep_existing "请输入授权码" "${existing_license_key}")"
+  web_base_url="$(prompt_keep_existing "请输入后台域名（示例：https://bot.example.com）" "${existing_web_base_url}")"
+  github_token="$(prompt_keep_existing "可选：输入 GitHub 访问令牌（回车跳过）" "${existing_github_token}")"
 
-  [[ -n "${bot_token}" ]] || die "BOT_TOKEN 不能为空"
-  [[ -n "${admin_user_id}" ]] || die "ADMIN_USER_ID 不能为空"
-  [[ -n "${license_server_url}" ]] || die "LICENSE_SERVER_URL 不能为空"
-  [[ -n "${license_key}" ]] || die "LICENSE_KEY 不能为空"
-  [[ -n "${web_base_url}" ]] || die "WEB_BASE_URL 不能为空"
+  [[ -n "${bot_token}" ]] || die "机器人令牌不能为空"
+  [[ -n "${admin_user_id}" ]] || die "管理员 Chat ID 不能为空"
+  [[ -n "${license_server_url}" ]] || die "授权服务器地址不能为空"
+  [[ -n "${license_key}" ]] || die "授权码不能为空"
+  [[ -n "${web_base_url}" ]] || die "后台域名不能为空"
 
   web_base_url="$(normalize_base_url "${web_base_url}")"
   if [[ ! "${web_base_url}" =~ ^https?:// ]]; then
-    die "WEB_BASE_URL 必须以 http:// 或 https:// 开头"
+    die "后台域名必须以 http:// 或 https:// 开头"
   fi
 
   webhook_secret="$(generate_random_token)"
@@ -394,7 +410,7 @@ cmd_menu() {
     case "${choice}" in
       1)
         local repo_url=""
-        read -r -p "仓库地址（回车用默认 ${DEFAULT_REPO_URL}）: " repo_url || true
+        read -r -p "仓库地址（回车使用默认仓库）: " repo_url || true
         repo_url="${repo_url:-${DEFAULT_REPO_URL}}"
         run_menu_action "一键安装" cmd_install "${repo_url}"
         pause_for_enter

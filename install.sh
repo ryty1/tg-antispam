@@ -15,10 +15,6 @@ DEFAULT_SESSION_QUEUE_MAX_PER_KEY="400"
 DEFAULT_SESSION_QUEUE_MAX_GLOBAL="6000"
 DEFAULT_UPDATE_APPLY_TIMEOUT_SECONDS="600"
 
-DEFAULT_AI_POOL_1="https://cliapi.ioa.de5.net/v1|sk-I70u88srB28mdiaua|gpt-5.4-mini|chat"
-DEFAULT_AI_POOL_2="https://cli.axxhy.pp.ua/v1|sk-9IbqFj3YUq1Exw315|gpt-5.4-mini|chat"
-DEFAULT_AI_POOL_3="https://api.dabo.im|sk-qsfn4BdbXeWZJjAIszyLGdAlfaBvC1c0jDmZoeyXalbsjpzF|grok-3-thinking"
-
 SUDO=""
 if [[ "${EUID}" -ne 0 ]]; then
   SUDO="sudo"
@@ -186,6 +182,25 @@ detect_local_ipv4() {
   printf "127.0.0.1"
 }
 
+detect_public_ipv4() {
+  local ip=""
+  local endpoints=(
+    "https://api.ipify.org"
+    "https://ifconfig.me/ip"
+    "https://ipv4.icanhazip.com"
+  )
+  local endpoint
+  for endpoint in "${endpoints[@]}"; do
+    ip="$(curl -4fsSL --max-time 4 "${endpoint}" 2>/dev/null || true)"
+    ip="$(printf "%s" "${ip}" | tr -d ' \r\n')"
+    if [[ "${ip}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+      printf "%s" "${ip}"
+      return
+    fi
+  done
+  printf ""
+}
+
 generate_random_token() {
   if command -v openssl >/dev/null 2>&1; then
     openssl rand -hex 24
@@ -231,6 +246,7 @@ configure_env_interactive() {
   local ai_pool_2
   local ai_pool_3
   local local_ip
+  local public_ip
   local existing_https_web_base_url
 
   log "开始在线配置（只问必要项）"
@@ -254,7 +270,12 @@ configure_env_interactive() {
       die "公网域名必须以 https:// 开头"
     fi
   else
-    local_ip="$(detect_local_ipv4)"
+    public_ip="$(detect_public_ipv4)"
+    if [[ -n "${public_ip}" ]]; then
+      local_ip="${public_ip}"
+    else
+      local_ip="$(detect_local_ipv4)"
+    fi
     web_base_url="http://${local_ip}:${DEFAULT_WEB_PORT}"
     log "已使用本机地址作为后台地址: ${web_base_url}"
   fi
@@ -262,15 +283,15 @@ configure_env_interactive() {
   read -r -p "是否自定义 AI 接口配置？[y/N]: " use_custom_ai || true
   use_custom_ai="${use_custom_ai:-N}"
   if [[ "${use_custom_ai,,}" == "y" || "${use_custom_ai,,}" == "yes" ]]; then
-    ai_pool_1="$(prompt_keep_existing "请输入 AI 接口 1（格式：地址|密钥|模型|可选风格）" "${existing_ai_pool_1:-${DEFAULT_AI_POOL_1}}")"
+    ai_pool_1="$(prompt_keep_existing "请输入 AI 接口 1（格式：地址|密钥|模型|可选风格）" "${existing_ai_pool_1}")"
     ai_pool_2="$(prompt_keep_existing "可选：请输入 AI 接口 2（回车跳过）" "${existing_ai_pool_2}")"
     ai_pool_3="$(prompt_keep_existing "可选：请输入 AI 接口 3（回车跳过）" "${existing_ai_pool_3}")"
     [[ -n "${ai_pool_1}" ]] || die "至少需要填写一个 AI 接口"
   else
-    ai_pool_1="${DEFAULT_AI_POOL_1}"
-    ai_pool_2="${DEFAULT_AI_POOL_2}"
-    ai_pool_3="${DEFAULT_AI_POOL_3}"
-    log "已使用内置 AI 接口配置"
+    ai_pool_1=""
+    ai_pool_2=""
+    ai_pool_3=""
+    log "已留空 AI 接口配置（后续可在菜单 2 重配）"
   fi
 
   github_token="$(prompt_keep_existing "可选：输入 GitHub 访问令牌（回车跳过）" "${existing_github_token}")"
@@ -334,12 +355,11 @@ pm2_start_or_restart() {
   [[ -f "${target}" ]] || die "缺少运行文件: ${target}"
 
   if pm2 describe "${PROCESS_NAME}" >/dev/null 2>&1; then
-    log "重启 PM2 进程: ${PROCESS_NAME}"
-    pm2 restart "${PROCESS_NAME}" --update-env
-  else
-    log "启动 PM2 进程: ${PROCESS_NAME}"
-    pm2 start "${target}" --name "${PROCESS_NAME}"
+    log "检测到已有进程，重新加载配置并重启: ${PROCESS_NAME}"
+    pm2 delete "${PROCESS_NAME}" || true
   fi
+  log "启动 PM2 进程: ${PROCESS_NAME}"
+  pm2 start "${target}" --name "${PROCESS_NAME}" --cwd "${APP_DIR}" --update-env
 
   pm2 save
   pm2 startup systemd -u "$(whoami)" --hp "${HOME}" >/tmp/pm2-startup.out 2>&1 || true
@@ -380,13 +400,8 @@ cmd_start() {
 }
 
 cmd_restart() {
-  if pm2 describe "${PROCESS_NAME}" >/dev/null 2>&1; then
-    pm2 restart "${PROCESS_NAME}" --update-env
-    pm2 save || true
-    log "重启完成"
-    return
-  fi
-  cmd_start
+  pm2_start_or_restart
+  log "重启完成"
 }
 
 cmd_stop() {

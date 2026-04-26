@@ -303,9 +303,17 @@ configure_env_interactive() {
   [[ -n "${license_key}" ]] || die "授权码不能为空"
   [[ -n "${web_base_url}" ]] || die "后台地址不能为空"
 
-  webhook_secret="$(generate_random_token)"
-  webhook_path="$(generate_random_token)"
-  webhook_url="${web_base_url}/api/telegram/webhook/${webhook_path}"
+  if [[ "${web_base_url}" =~ ^https:// ]]; then
+    webhook_secret="$(generate_random_token)"
+    webhook_path="$(generate_random_token)"
+    webhook_url="${web_base_url}/api/telegram/webhook/${webhook_path}"
+    log "已启用 Webhook（HTTPS）"
+  else
+    webhook_secret=""
+    webhook_path=""
+    webhook_url=""
+    log "当前为非 HTTPS 地址，已自动关闭 Webhook，使用 Polling 模式启动"
+  fi
 
   cat >"${env_file}" <<EOF
 BOT_TOKEN=${bot_token}
@@ -334,7 +342,11 @@ UPDATE_APPLY_TIMEOUT_SECONDS=${DEFAULT_UPDATE_APPLY_TIMEOUT_SECONDS}
 EOF
 
   log ".env 生成完成: ${env_file}"
-  log "已自动生成 WEBHOOK_URL 与 WEBHOOK_SECRET"
+  if [[ -n "${webhook_url}" ]]; then
+    log "已自动生成 WEBHOOK_URL 与 WEBHOOK_SECRET"
+  else
+    log "WEBHOOK_URL/WEBHOOK_SECRET 已留空（Polling 模式）"
+  fi
 }
 
 ensure_update_script_ready() {

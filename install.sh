@@ -158,6 +158,34 @@ normalize_base_url() {
   printf "%s" "${raw}"
 }
 
+detect_local_ipv4() {
+  local ip=""
+
+  if command -v hostname >/dev/null 2>&1; then
+    local candidates
+    candidates="$(hostname -I 2>/dev/null || true)"
+    for ip in ${candidates}; do
+      if [[ "${ip}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] && [[ "${ip}" != "127.0.0.1" ]]; then
+        printf "%s" "${ip}"
+        return
+      fi
+    done
+  fi
+
+  if command -v ip >/dev/null 2>&1; then
+    local route
+    route="$(ip -4 route get 1.1.1.1 2>/dev/null || true)"
+    ip="${route##* src }"
+    ip="${ip%% *}"
+    if [[ "${ip}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] && [[ "${ip}" != "127.0.0.1" ]]; then
+      printf "%s" "${ip}"
+      return
+    fi
+  fi
+
+  printf "127.0.0.1"
+}
+
 generate_random_token() {
   if command -v openssl >/dev/null 2>&1; then
     openssl rand -hex 24
@@ -173,6 +201,9 @@ configure_env_interactive() {
   local existing_license_server_url
   local existing_license_key
   local existing_web_base_url
+  local existing_ai_pool_1
+  local existing_ai_pool_2
+  local existing_ai_pool_3
   local existing_github_token
 
   existing_bot_token="$(read_existing_env_value BOT_TOKEN)"
@@ -180,6 +211,9 @@ configure_env_interactive() {
   existing_license_server_url="$(read_existing_env_value LICENSE_SERVER_URL)"
   existing_license_key="$(read_existing_env_value LICENSE_KEY)"
   existing_web_base_url="$(read_existing_env_value WEB_BASE_URL)"
+  existing_ai_pool_1="$(read_existing_env_value AI_POOL_1)"
+  existing_ai_pool_2="$(read_existing_env_value AI_POOL_2)"
+  existing_ai_pool_3="$(read_existing_env_value AI_POOL_3)"
   existing_github_token="$(read_existing_env_value UPDATE_GITHUB_TOKEN)"
 
   local bot_token
@@ -191,25 +225,61 @@ configure_env_interactive() {
   local webhook_secret
   local webhook_path
   local webhook_url
+  local use_https_domain
+  local use_custom_ai
+  local ai_pool_1
+  local ai_pool_2
+  local ai_pool_3
+  local local_ip
+  local existing_https_web_base_url
 
   log "开始在线配置（只问必要项）"
   bot_token="$(prompt_keep_existing "请输入机器人令牌（在 @BotFather 获取）" "${existing_bot_token}")"
   admin_user_id="$(prompt_keep_existing "请输入管理员 Chat ID（纯数字）" "${existing_admin_user_id}")"
   license_server_url="$(prompt_keep_existing "请输入授权服务器地址（示例：https://license.example.com）" "${existing_license_server_url}")"
   license_key="$(prompt_keep_existing "请输入授权码" "${existing_license_key}")"
-  web_base_url="$(prompt_keep_existing "请输入后台域名（示例：https://bot.example.com）" "${existing_web_base_url}")"
+
+  existing_https_web_base_url=""
+  if [[ "${existing_web_base_url}" =~ ^https:// ]]; then
+    existing_https_web_base_url="${existing_web_base_url}"
+  fi
+
+  read -r -p "是否使用公网 HTTPS 域名作为后台地址？[y/N]: " use_https_domain || true
+  use_https_domain="${use_https_domain:-N}"
+  if [[ "${use_https_domain,,}" == "y" || "${use_https_domain,,}" == "yes" ]]; then
+    web_base_url="$(prompt_keep_existing "请输入公网 HTTPS 域名（示例：https://bot.example.com）" "${existing_https_web_base_url}")"
+    [[ -n "${web_base_url}" ]] || die "公网 HTTPS 域名不能为空"
+    web_base_url="$(normalize_base_url "${web_base_url}")"
+    if [[ ! "${web_base_url}" =~ ^https:// ]]; then
+      die "公网域名必须以 https:// 开头"
+    fi
+  else
+    local_ip="$(detect_local_ipv4)"
+    web_base_url="http://${local_ip}:${DEFAULT_WEB_PORT}"
+    log "已使用本机地址作为后台地址: ${web_base_url}"
+  fi
+
+  read -r -p "是否自定义 AI 接口配置？[y/N]: " use_custom_ai || true
+  use_custom_ai="${use_custom_ai:-N}"
+  if [[ "${use_custom_ai,,}" == "y" || "${use_custom_ai,,}" == "yes" ]]; then
+    ai_pool_1="$(prompt_keep_existing "请输入 AI 接口 1（格式：地址|密钥|模型|可选风格）" "${existing_ai_pool_1:-${DEFAULT_AI_POOL_1}}")"
+    ai_pool_2="$(prompt_keep_existing "可选：请输入 AI 接口 2（回车跳过）" "${existing_ai_pool_2}")"
+    ai_pool_3="$(prompt_keep_existing "可选：请输入 AI 接口 3（回车跳过）" "${existing_ai_pool_3}")"
+    [[ -n "${ai_pool_1}" ]] || die "至少需要填写一个 AI 接口"
+  else
+    ai_pool_1="${DEFAULT_AI_POOL_1}"
+    ai_pool_2="${DEFAULT_AI_POOL_2}"
+    ai_pool_3="${DEFAULT_AI_POOL_3}"
+    log "已使用内置 AI 接口配置"
+  fi
+
   github_token="$(prompt_keep_existing "可选：输入 GitHub 访问令牌（回车跳过）" "${existing_github_token}")"
 
   [[ -n "${bot_token}" ]] || die "机器人令牌不能为空"
   [[ -n "${admin_user_id}" ]] || die "管理员 Chat ID 不能为空"
   [[ -n "${license_server_url}" ]] || die "授权服务器地址不能为空"
   [[ -n "${license_key}" ]] || die "授权码不能为空"
-  [[ -n "${web_base_url}" ]] || die "后台域名不能为空"
-
-  web_base_url="$(normalize_base_url "${web_base_url}")"
-  if [[ ! "${web_base_url}" =~ ^https?:// ]]; then
-    die "后台域名必须以 http:// 或 https:// 开头"
-  fi
+  [[ -n "${web_base_url}" ]] || die "后台地址不能为空"
 
   webhook_secret="$(generate_random_token)"
   webhook_path="$(generate_random_token)"
@@ -229,9 +299,9 @@ WEB_PORT=${DEFAULT_WEB_PORT}
 WEBHOOK_URL=${webhook_url}
 WEBHOOK_SECRET=${webhook_secret}
 
-AI_POOL_1=${DEFAULT_AI_POOL_1}
-AI_POOL_2=${DEFAULT_AI_POOL_2}
-AI_POOL_3=${DEFAULT_AI_POOL_3}
+AI_POOL_1=${ai_pool_1}
+AI_POOL_2=${ai_pool_2}
+AI_POOL_3=${ai_pool_3}
 
 WEBHOOK_WORKERS=${DEFAULT_WEBHOOK_WORKERS}
 WEBHOOK_QUEUE_MAX=${DEFAULT_WEBHOOK_QUEUE_MAX}
@@ -294,6 +364,7 @@ cmd_install() {
   configure_env_interactive
   ensure_update_script_ready
   pm2_start_or_restart
+  cmd_machine_code
   log "安装完成"
 }
 
@@ -337,6 +408,21 @@ cmd_update_now() {
   "${update_script}"
 }
 
+cmd_machine_code() {
+  local target="${APP_DIR}/release/app.protected.buyer.cjs"
+  [[ -f "${target}" ]] || die "缺少运行文件: ${target}"
+
+  local machine_code
+  machine_code="$(node "${target}" --license-machine-code 2>/dev/null || true)"
+  if [[ ! "${machine_code}" =~ ^[a-f0-9]{64}$ ]]; then
+    die "获取机器码失败，请确认 Node 环境与运行文件正常"
+  fi
+
+  printf "\n================================\n"
+  printf "机器码（64位）:\n%s\n" "${machine_code}"
+  printf "================================\n\n"
+}
+
 cmd_uninstall() {
   pm2_stop_and_delete
   read -r -p "是否删除 ${APP_DIR} 目录? [y/N]: " answer || true
@@ -367,6 +453,7 @@ show_help() {
   bash install.sh logs                 查看日志
   bash install.sh status               查看状态
   bash install.sh update-now           立即执行更新脚本
+  bash install.sh machine-code         获取机器码（64位）
   bash install.sh uninstall            卸载（可选删除 /opt/tg-antispam）
 EOF
 }
@@ -402,10 +489,11 @@ cmd_menu() {
     printf "7) 查看状态\n"
     printf "8) 立即更新\n"
     printf "9) 卸载\n"
+    printf "10) 获取机器码\n"
     printf "0) 退出\n"
 
     local choice=""
-    read -r -p "请输入序号 [0-9]: " choice || true
+    read -r -p "请输入序号 [0-10]: " choice || true
 
     case "${choice}" in
       1)
@@ -443,12 +531,16 @@ cmd_menu() {
         run_menu_action "卸载" cmd_uninstall
         pause_for_enter
         ;;
+      10)
+        run_menu_action "获取机器码" cmd_machine_code
+        pause_for_enter
+        ;;
       0|q|Q|quit|exit)
         log "已退出"
         break
         ;;
       *)
-        log "无效序号，请输入 0-9"
+        log "无效序号，请输入 0-10"
         ;;
     esac
   done
@@ -467,6 +559,7 @@ main() {
     logs) cmd_logs ;;
     status) cmd_status ;;
     update-now) cmd_update_now ;;
+    machine-code) cmd_machine_code ;;
     uninstall) cmd_uninstall ;;
     help|-h|--help) show_help ;;
     *)

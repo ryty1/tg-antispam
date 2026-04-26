@@ -4579,7 +4579,7 @@
 
               <div class="card user-page-panel license-records-panel">
                 <h2>我的授权码</h2>
-                <p class="sub">每次启动时会自动在线验权；可在此手动绑定/解绑机器码。</p>
+                <p id="licenseServerNotice" class="sub">每次启动时会自动在线验权；可在此手动绑定/解绑机器码。</p>
                 <div class="list" id="licenseKeysList"></div>
                 <div id="userLicensePager" class="pager"></div>
               </div>
@@ -7051,6 +7051,13 @@
     function renderLicenseCenter(data) {
       const products = Array.isArray(data?.licenseProducts) ? data.licenseProducts : [];
       const licenses = Array.isArray(data?.licenseKeys) ? data.licenseKeys : [];
+      const webBaseUrl = String(data?.webBaseUrl || '').trim();
+      const serverNotice = document.getElementById('licenseServerNotice');
+      if (serverNotice) {
+        serverNotice.textContent = webBaseUrl
+          ? `每次启动时会自动在线验权；可在此手动绑定/解绑机器码。授权服务器地址: ${webBaseUrl}`
+          : '每次启动时会自动在线验权；可在此手动绑定/解绑机器码。';
+      }
 
       renderList(document.getElementById('licenseProductsList'), products, (product) => {
         const summary = getLicenseProductSummary(product);
@@ -7132,6 +7139,9 @@
       if (!state.me) return;
       state.me.licenseProducts = Array.isArray(payload?.products) ? payload.products : [];
       state.me.licenseKeys = Array.isArray(payload?.licenses) ? payload.licenses : [];
+      if (typeof payload?.webBaseUrl === 'string') {
+        state.me.webBaseUrl = payload.webBaseUrl;
+      }
       state.me.onlinePaymentEnabled = !!payload?.onlinePaymentEnabled;
       state.me.paymentMethods = Array.isArray(payload?.paymentMethods) ? payload.paymentMethods : [];
       renderLicenseCenter(state.me);

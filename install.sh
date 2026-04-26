@@ -185,6 +185,10 @@ detect_local_ipv4() {
 detect_public_ipv4() {
   local ip=""
   local endpoints=(
+    "https://api-ipv4.ip.sb/ip"
+    "https://ip.sb"
+    "http://ip.sb"
+    "https://4.ipw.cn"
     "https://api.ipify.org"
     "https://ifconfig.me/ip"
     "https://ipv4.icanhazip.com"
@@ -219,7 +223,6 @@ configure_env_interactive() {
   local existing_ai_pool_1
   local existing_ai_pool_2
   local existing_ai_pool_3
-  local existing_github_token
 
   existing_bot_token="$(read_existing_env_value BOT_TOKEN)"
   existing_admin_user_id="$(read_existing_env_value ADMIN_USER_ID)"
@@ -229,14 +232,12 @@ configure_env_interactive() {
   existing_ai_pool_1="$(read_existing_env_value AI_POOL_1)"
   existing_ai_pool_2="$(read_existing_env_value AI_POOL_2)"
   existing_ai_pool_3="$(read_existing_env_value AI_POOL_3)"
-  existing_github_token="$(read_existing_env_value UPDATE_GITHUB_TOKEN)"
 
   local bot_token
   local admin_user_id
   local license_server_url
   local license_key
   local web_base_url
-  local github_token
   local webhook_secret
   local webhook_path
   local webhook_url
@@ -273,11 +274,13 @@ configure_env_interactive() {
     public_ip="$(detect_public_ipv4)"
     if [[ -n "${public_ip}" ]]; then
       local_ip="${public_ip}"
+      log "已识别公网 IP: ${public_ip}"
     else
       local_ip="$(detect_local_ipv4)"
+      log "未识别到公网 IP，回退使用内网 IP: ${local_ip}"
     fi
     web_base_url="http://${local_ip}:${DEFAULT_WEB_PORT}"
-    log "已使用本机地址作为后台地址: ${web_base_url}"
+    log "已使用地址作为后台地址: ${web_base_url}"
   fi
 
   read -r -p "是否自定义 AI 接口配置？[y/N]: " use_custom_ai || true
@@ -293,8 +296,6 @@ configure_env_interactive() {
     ai_pool_3=""
     log "已留空 AI 接口配置（后续可在菜单 2 重配）"
   fi
-
-  github_token="$(prompt_keep_existing "可选：输入 GitHub 访问令牌（回车跳过）" "${existing_github_token}")"
 
   [[ -n "${bot_token}" ]] || die "机器人令牌不能为空"
   [[ -n "${admin_user_id}" ]] || die "管理员 Chat ID 不能为空"
@@ -331,13 +332,6 @@ SESSION_QUEUE_MAX_GLOBAL=${DEFAULT_SESSION_QUEUE_MAX_GLOBAL}
 
 UPDATE_APPLY_TIMEOUT_SECONDS=${DEFAULT_UPDATE_APPLY_TIMEOUT_SECONDS}
 EOF
-
-  if [[ -n "${github_token}" ]]; then
-    {
-      printf "UPDATE_GITHUB_TOKEN=%s\n" "${github_token}"
-      printf "GITHUB_TOKEN=%s\n" "${github_token}"
-    } >>"${env_file}"
-  fi
 
   log ".env 生成完成: ${env_file}"
   log "已自动生成 WEBHOOK_URL 与 WEBHOOK_SECRET"

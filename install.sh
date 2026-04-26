@@ -341,6 +341,8 @@ show_help() {
 买家一键部署脚本
 
 用法:
+  bash install.sh                    打开交互菜单（默认）
+  bash install.sh menu               打开交互菜单
   bash install.sh install [repo_url]   一键安装（克隆/依赖/.env/pm2）
   bash install.sh env                  在线重配 .env
   bash install.sh start                启动 PM2
@@ -353,10 +355,97 @@ show_help() {
 EOF
 }
 
+pause_for_enter() {
+  read -r -p "按回车继续..." _ || true
+}
+
+run_menu_action() {
+  local label="$1"
+  shift
+  if ("$@"); then
+    log "${label}：完成"
+  else
+    log "${label}：失败，请按日志排查后重试"
+  fi
+}
+
+cmd_menu() {
+  if [[ ! -t 0 ]]; then
+    show_help
+    return
+  fi
+
+  while true; do
+    printf "\n==== TG 买家部署菜单 ====\n"
+    printf "1) 一键安装（克隆/依赖/.env/PM2）\n"
+    printf "2) 重配 .env\n"
+    printf "3) 启动服务\n"
+    printf "4) 重启服务\n"
+    printf "5) 停止服务\n"
+    printf "6) 查看日志\n"
+    printf "7) 查看状态\n"
+    printf "8) 立即更新\n"
+    printf "9) 卸载\n"
+    printf "0) 退出\n"
+
+    local choice=""
+    read -r -p "请输入序号 [0-9]: " choice || true
+
+    case "${choice}" in
+      1)
+        local repo_url=""
+        read -r -p "仓库地址（回车用默认 ${DEFAULT_REPO_URL}）: " repo_url || true
+        repo_url="${repo_url:-${DEFAULT_REPO_URL}}"
+        run_menu_action "一键安装" cmd_install "${repo_url}"
+        pause_for_enter
+        ;;
+      2)
+        run_menu_action "重配 .env" cmd_env
+        pause_for_enter
+        ;;
+      3)
+        run_menu_action "启动服务" cmd_start
+        pause_for_enter
+        ;;
+      4)
+        run_menu_action "重启服务" cmd_restart
+        pause_for_enter
+        ;;
+      5)
+        run_menu_action "停止服务" cmd_stop
+        pause_for_enter
+        ;;
+      6)
+        cmd_logs
+        ;;
+      7)
+        run_menu_action "查看状态" cmd_status
+        pause_for_enter
+        ;;
+      8)
+        run_menu_action "立即更新" cmd_update_now
+        pause_for_enter
+        ;;
+      9)
+        run_menu_action "卸载" cmd_uninstall
+        pause_for_enter
+        ;;
+      0|q|Q|quit|exit)
+        log "已退出"
+        break
+        ;;
+      *)
+        log "无效序号，请输入 0-9"
+        ;;
+    esac
+  done
+}
+
 main() {
-  local cmd="${1:-help}"
+  local cmd="${1:-menu}"
   shift || true
   case "${cmd}" in
+    menu) cmd_menu ;;
     install) cmd_install "$@" ;;
     env) cmd_env ;;
     start) cmd_start ;;

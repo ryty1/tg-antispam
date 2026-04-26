@@ -97,6 +97,20 @@ else
   fi
 fi
 
+expected_hash="$(awk '{print $1}' "${BIN_NAME}.sha256" | tr -d ' \r\n')"
+if [[ -f "${RELEASE_DIR}/${BIN_NAME}" ]]; then
+  if command -v sha256sum >/dev/null 2>&1; then
+    current_hash="$(sha256sum "${RELEASE_DIR}/${BIN_NAME}" | awk '{print $1}' | tr -d ' \r\n')"
+  else
+    current_hash="$(shasum -a 256 "${RELEASE_DIR}/${BIN_NAME}" | awk '{print $1}' | tr -d ' \r\n')"
+  fi
+  if [[ -n "${expected_hash}" && "${current_hash}" == "${expected_hash}" ]]; then
+    echo "[update] already latest binary, skip replace/restart"
+    notify_tg "ℹ️ 买家已是最新版本\n版本: ${LATEST_TAG:-未知}\n无需重复更新"
+    exit 0
+  fi
+fi
+
 backup_file="${RELEASE_DIR}/${BIN_NAME}.bak.$(date +%Y%m%d%H%M%S)"
 if [[ -f "${RELEASE_DIR}/${BIN_NAME}" ]]; then
   cp -f "${RELEASE_DIR}/${BIN_NAME}" "${backup_file}"

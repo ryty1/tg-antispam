@@ -392,9 +392,9 @@ cmd_menu() {
   fi
 
   while true; do
-    printf "\n==== TG 买家部署菜单 ====\n"
-    printf "1) 一键安装（克隆/依赖/.env/PM2）\n"
-    printf "2) 重配 .env\n"
+    printf "\n==== 部署菜单 ====\n"
+    printf "1) 一键安装\n"
+    printf "2) 重配配置\n"
     printf "3) 启动服务\n"
     printf "4) 重启服务\n"
     printf "5) 停止服务\n"
@@ -409,14 +409,11 @@ cmd_menu() {
 
     case "${choice}" in
       1)
-        local repo_url=""
-        read -r -p "仓库地址（回车使用默认仓库）: " repo_url || true
-        repo_url="${repo_url:-${DEFAULT_REPO_URL}}"
-        run_menu_action "一键安装" cmd_install "${repo_url}"
+        run_menu_action "一键安装" cmd_install
         pause_for_enter
         ;;
       2)
-        run_menu_action "重配 .env" cmd_env
+        run_menu_action "重配配置" cmd_env
         pause_for_enter
         ;;
       3)

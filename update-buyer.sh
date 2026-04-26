@@ -57,7 +57,7 @@ run_worker_detached() {
   echo "[update] worker started: ${WORKER_LOG}"
 }
 
-if [[ "${TG_BUYER_UPDATE_WORKER:-0}" != "1" && "${1:-}" != "--worker" ]]; then
+if [[ "${1:-}" != "--worker" ]]; then
   echo "[update] scheduling detached worker..."
   run_worker_detached
   exit 0
@@ -114,7 +114,7 @@ if [[ -f "${RELEASE_DIR}/${BIN_NAME}" ]]; then
   echo "[update] remote_hash=${downloaded_hash}"
   if [[ -n "${downloaded_hash}" && "${current_hash}" == "${downloaded_hash}" ]]; then
     echo "[update] already latest binary, skip replace/restart"
-    notify_tg "ℹ️ 买家已是最新版本\n版本: ${LATEST_TAG:-未知}\n远端哈希: ${downloaded_hash}\n本地哈希: ${current_hash}\n无需重复更新"
+    notify_tg "ℹ️ 已是最新版本\n版本: ${LATEST_TAG:-未知}\n远端哈希: ${downloaded_hash}\n本地哈希: ${current_hash}\n无需重复更新"
     exit 0
   fi
 fi
@@ -131,7 +131,7 @@ echo "[update] restarting pm2 process ${PROCESS_NAME}..."
 if pm2 restart "${PROCESS_NAME}" --update-env; then
   sleep 2
   pm2 describe "${PROCESS_NAME}" >/dev/null
-  notify_tg "✅ 买家更新完成\n版本: ${LATEST_TAG:-未知}\n状态: 脚本执行成功并已重启"
+  notify_tg "✅ 更新完成\n版本: ${LATEST_TAG:-未知}\n状态: 脚本执行成功并已重启"
   echo "[update] success"
   exit 0
 fi
@@ -141,5 +141,5 @@ if [[ -f "${backup_file}" ]]; then
   cp -f "${backup_file}" "${RELEASE_DIR}/${BIN_NAME}"
   pm2 restart "${PROCESS_NAME}" --update-env || true
 fi
-notify_tg "❌ 买家更新失败\n版本: ${LATEST_TAG:-未知}\n请登录服务器查看日志: ${WORKER_LOG}"
+notify_tg "❌ 更新失败\n版本: ${LATEST_TAG:-未知}\n请登录服务器查看日志: ${WORKER_LOG}"
 exit 1

@@ -1545,6 +1545,22 @@
       min-height: 0;
     }
 
+    .license-server-notice {
+      margin: 0 0 14px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(145, 177, 228, 0.36);
+      background: rgba(88, 122, 180, 0.16);
+      color: #dceaff;
+      line-height: 1.5;
+    }
+
+    .license-server-notice.with-server-url {
+      border-color: rgba(110, 204, 255, 0.46);
+      background: rgba(86, 170, 255, 0.2);
+      color: #e7f6ff;
+    }
+
     .claim-card {
       min-height: 0;
     }
@@ -4579,7 +4595,7 @@
 
               <div class="card user-page-panel license-records-panel">
                 <h2>我的授权码</h2>
-                <p id="licenseServerNotice" class="sub">每次启动时会自动在线验权；可在此手动绑定/解绑机器码。</p>
+                <p id="licenseServerNotice" class="sub license-server-notice">每次启动时会自动在线验权；可在此手动绑定/解绑机器码。</p>
                 <div class="list" id="licenseKeysList"></div>
                 <div id="userLicensePager" class="pager"></div>
               </div>
@@ -7054,9 +7070,12 @@
       const webBaseUrl = String(data?.webBaseUrl || '').trim();
       const serverNotice = document.getElementById('licenseServerNotice');
       if (serverNotice) {
-        serverNotice.textContent = webBaseUrl
+        const hasLicenses = licenses.length > 0;
+        const showServerAddress = hasLicenses && !!webBaseUrl;
+        serverNotice.textContent = showServerAddress
           ? `每次启动时会自动在线验权；可在此手动绑定/解绑机器码。授权服务器地址: ${webBaseUrl}`
           : '每次启动时会自动在线验权；可在此手动绑定/解绑机器码。';
+        serverNotice.classList.toggle('with-server-url', showServerAddress);
       }
 
       renderList(document.getElementById('licenseProductsList'), products, (product) => {

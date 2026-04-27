@@ -50,10 +50,46 @@
       overflow-x: hidden;
     }
 
+    .buyer-watermark-layer {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      transition: opacity .28s ease;
+      overflow: hidden;
+    }
+
+    body.console-buyer-watermark .buyer-watermark-layer {
+      opacity: 1;
+    }
+
+    .buyer-watermark-grid {
+      position: absolute;
+      inset: -12%;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 46px 64px;
+      transform: rotate(-24deg);
+      transform-origin: center;
+    }
+
+    .buyer-watermark-grid span {
+      font-size: 34px;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      text-align: center;
+      color: rgba(130, 167, 236, 0.12);
+      user-select: none;
+      white-space: nowrap;
+    }
+
     .wrap {
       width: min(1180px, calc(100% - 32px));
       margin: 0 auto;
       padding: 24px 0 56px;
+      position: relative;
+      z-index: 1;
     }
 
     .hero,
@@ -2566,6 +2602,16 @@
     }
 
     @media (max-width: 980px) {
+      .buyer-watermark-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 34px 42px;
+      }
+
+      .buyer-watermark-grid span {
+        font-size: 24px;
+        color: rgba(70, 110, 188, 0.11);
+      }
+
       body.mobile-app-shell {
         background:
           radial-gradient(circle at top center, rgba(15, 85, 255, 0.14), transparent 18%),
@@ -4204,6 +4250,32 @@
         text-align: center;
       }
 
+      body.mobile-app-shell .license-product-card {
+        border-color: rgba(166, 190, 232, 0.92);
+        background: linear-gradient(180deg, #ffffff 0%, #f4f9ff 100%);
+      }
+
+      body.mobile-app-shell .license-product-key {
+        color: #1e3860;
+      }
+
+      body.mobile-app-shell .license-product-card .sub {
+        color: #4c6894;
+      }
+
+      body.mobile-app-shell .license-product-meta {
+        color: #4f6c98;
+        font-weight: 600;
+      }
+
+      body.mobile-app-shell .license-product-meta .dot {
+        background: #7f9bc8;
+      }
+
+      body.mobile-app-shell .license-product-card .product-card-price-pill {
+        color: #2f4c79;
+      }
+
       body.mobile-app-shell .license-product-card .product-card-footer {
         flex-wrap: wrap;
       }
@@ -4235,6 +4307,9 @@
       }
     })();
   </script>
+  <div id="buyerWatermarkLayer" class="buyer-watermark-layer" aria-hidden="true">
+    <div id="buyerWatermarkGrid" class="buyer-watermark-grid"></div>
+  </div>
   <div class="wrap">
     <section class="hero">
       <div class="hero-head">
@@ -5927,10 +6002,37 @@
       return compact;
     }
 
+    function getBuyerLicensePlanDisplay(planValue) {
+      const raw = String(planValue || '').trim();
+      if (!raw) return '授权套餐';
+      const lower = raw.toLowerCase();
+      if (/标准授权/.test(raw) || lower.includes('standard')) return '标准授权';
+      if (/商业授权/.test(raw) || lower.includes('business') || /(^|[_-])3m($|[_-])/.test(lower)) return '商业授权';
+      if (/企业授权/.test(raw) || lower.includes('enterprise') || /(^|[_-])5m($|[_-])/.test(lower)) return '企业授权';
+      if (/(^|[_-])1m($|[_-])/.test(lower)) return '标准授权';
+      return raw;
+    }
+
     function formatDateInput(value) {
       const text = String(value || '').trim();
       if (!text) return '';
       return text.slice(0, 10);
+    }
+
+    function formatDateTimeDisplay(value) {
+      const text = String(value || '').trim();
+      if (!text) return '';
+      const date = new Date(text);
+      if (!Number.isFinite(date.getTime())) {
+        return text.replace('T', ' ').replace('Z', '');
+      }
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hour = String(date.getHours()).padStart(2, '0');
+      const minute = String(date.getMinutes()).padStart(2, '0');
+      const second = String(date.getSeconds()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
     }
 
     function getPromoValidityModeLabel(mode) {
@@ -7188,16 +7290,22 @@
     function renderMobileHome(data, visibleUserOrders, visibleUserFinanceLogs) {
       const userTitle = getPreferredUserTitle(data.user || {});
       const username = data.user?.username ? `@${safeText(data.user.username)}` : '未设置用户名';
-      const subActive = !!data.subscription;
+      const isBuyerBuild = !!data?.isBuyerBuild;
+      const subActive = isBuyerBuild ? !!data.runtimeLicenseActive : !!data.subscription;
       const latestItems = [];
       const latestOrder = Array.isArray(data.orders) && data.orders.length ? data.orders[0] : null;
       const latestFinance = Array.isArray(data.financeLogs) && data.financeLogs.length ? data.financeLogs[0] : null;
       const latestChat = Array.isArray(data.chats) && data.chats.length ? data.chats[0] : null;
       const featuredProducts = (Array.isArray(data.products) ? data.products : []).slice(0, 2);
-      const dueRaw = safeText(data.subscription?.ends_at || '');
+      const dueRaw = isBuyerBuild
+        ? safeText(data.runtimeLicenseExpiresAt || '')
+        : safeText(data.subscription?.ends_at || '');
       const dueLabel = subActive
-        ? (dueRaw ? dueRaw.replace('T', ' ').split(' ')[0] : '永久')
-        : '未订阅';
+        ? (dueRaw ? formatDateTimeDisplay(dueRaw).split(' ')[0] : '-')
+        : (isBuyerBuild ? '未授权' : '未订阅');
+      const planLabel = isBuyerBuild
+        ? safeText(getBuyerLicensePlanDisplay(data.runtimeLicensePlan || ''))
+        : safeText(data.subscription?.plan_code || 'None');
       const aiEnabled = !!data.aiConfig?.enabled;
       const announcementText = safeText(data.publicAnnouncement || '').trim();
       const announcementHtml = safeText(data.publicAnnouncementHtml || '').trim();
@@ -7205,10 +7313,12 @@
 
       document.getElementById('mobileHomeName').textContent = userTitle;
       document.getElementById('mobileHomeMeta').textContent = `${username} · Telegram ID ${data.user?.user_id || '-'}`;
-      document.getElementById('mobileHomeStatus').textContent = subActive ? '订阅生效中' : '待开通订阅';
+      document.getElementById('mobileHomeStatus').textContent = subActive
+        ? (isBuyerBuild ? '授权生效中' : '订阅生效中')
+        : (isBuyerBuild ? '待完成授权' : '待开通订阅');
       document.getElementById('mobileHomeStatus').className = `pill ${subActive ? 'ok' : 'warn'}`;
       document.getElementById('mobileMetricBalance').textContent = formatMoney(data.user?.balance_cents || 0);
-      document.getElementById('mobileMetricPlan').textContent = safeText(data.subscription?.plan_code || 'None');
+      document.getElementById('mobileMetricPlan').textContent = planLabel;
       document.getElementById('mobileMetricPlanMeta').textContent = `到期时间 ${dueLabel}`;
       document.getElementById('mobileMetricChats').textContent = String(data.claimCount || 0);
       document.getElementById('mobileMetricAi').textContent = aiEnabled ? '已开启' : '未开启';
@@ -7460,21 +7570,41 @@
       renderAdminTable('adminChatsList', 'chats', ['群组/频道', '绑定账号', '订阅状态', '操作'], chatRows);
     }
 
+    function ensureBuyerWatermark() {
+      const grid = document.getElementById('buyerWatermarkGrid');
+      if (!grid || grid.childElementCount > 0) return;
+      const frag = document.createDocumentFragment();
+      for (let i = 0; i < 32; i += 1) {
+        const node = document.createElement('span');
+        node.textContent = '授权版';
+        frag.appendChild(node);
+      }
+      grid.appendChild(frag);
+    }
+
     function renderDashboard(data) {
       state.me = data;
       startSessionKeepAlive();
+      const isBuyerBuild = !!data?.isBuyerBuild;
+      document.body.classList.toggle('console-buyer-watermark', isBuyerBuild);
+      if (isBuyerBuild) ensureBuyerWatermark();
       applyPublicAnnouncement(data.publicAnnouncement || '', true, data.publicAnnouncementHtml || '');
       document.getElementById('loginCard').classList.add('hidden');
       document.getElementById('dashboard').classList.remove('hidden');
       document.getElementById('logoutBtn').classList.remove('hidden');
 
-      const subActive = !!data.subscription;
+      const buyerLicenseActive = !!data.runtimeLicenseActive;
+      const subActive = isBuyerBuild ? buyerLicenseActive : !!data.subscription;
+      const buyerPlan = safeText(getBuyerLicensePlanDisplay(data.runtimeLicensePlan || ''));
+      const buyerExpiresAt = formatDateTimeDisplay(data.runtimeLicenseExpiresAt || '');
       const badge = document.getElementById('sessionBadge');
-      badge.textContent = subActive ? '已登录 / 订阅生效' : '已登录 / 等待订阅';
+      badge.textContent = subActive
+        ? (isBuyerBuild ? '已登录 / 授权生效' : '已登录 / 订阅生效')
+        : (isBuyerBuild ? '已登录 / 授权待处理' : '已登录 / 等待订阅');
       badge.className = `pill ${subActive ? 'ok' : 'warn'}`;
 
       document.getElementById('metricBalance').textContent = formatMoney(data.user.balance_cents || 0);
-      document.getElementById('metricPlan').textContent = data.subscription?.plan_code || 'None';
+      document.getElementById('metricPlan').textContent = isBuyerBuild ? buyerPlan : (data.subscription?.plan_code || 'None');
       document.getElementById('metricChats').textContent = String(data.claimCount || 0);
       document.getElementById('metricQuota').textContent = data.claimLimit == null ? '无限' : String(data.claimLimit);
 
@@ -7485,9 +7615,15 @@
         `<div><strong>账户余额</strong><div class="muted">${formatMoney(data.user.balance_cents || 0)}</div></div>`,
       ].join('');
 
-      document.getElementById('subscriptionSummary').innerHTML = subActive
-        ? `<span class="pill ok">套餐: ${safeText(data.subscription.plan_code)}</span><span class="pill ok">到期: ${safeText(data.subscription.ends_at)}</span>`
-        : '<span class="pill danger">当前没有有效订阅</span>';
+      if (isBuyerBuild) {
+        document.getElementById('subscriptionSummary').innerHTML = subActive
+          ? `<span class="pill ok">授权: ${buyerPlan}</span><span class="pill ok">到期: ${safeText(buyerExpiresAt || '-')}</span>`
+          : '<span class="pill danger">当前授权未生效</span>';
+      } else {
+        document.getElementById('subscriptionSummary').innerHTML = subActive
+          ? `<span class="pill ok">套餐: ${safeText(data.subscription.plan_code)}</span><span class="pill ok">到期: ${safeText(data.subscription.ends_at)}</span>`
+          : '<span class="pill danger">当前没有有效订阅</span>';
+      }
 
       document.getElementById('paymentNote').textContent = data.paymentNote || '未配置支付说明。';
       document.getElementById('rechargeNotice').textContent = data.onlinePaymentEnabled
@@ -7509,13 +7645,13 @@
       }
       document.getElementById('claimQuotaNote').textContent = data.claimLimit == null
         ? `认领额度：无限，当前已认领 ${data.claimCount || 0} 个群组/频道。`
-        : `认领额度：当前 Pro 套餐最多认领 ${data.claimLimit} 个群组/频道，当前已认领 ${data.claimCount || 0} 个。`;
+        : `认领额度：当前 ${isBuyerBuild ? '授权' : 'Pro 套餐'}最多认领 ${data.claimLimit} 个群组/频道，当前已认领 ${data.claimCount || 0} 个。`;
 
       const locked = !data.canEditPremiumSettings;
       document.getElementById('premiumLockNote').textContent = locked
-        ? '当前没有有效订阅。认领群组/频道和自定义 AI 配置已锁定，开通订阅后才能修改。'
+        ? (isBuyerBuild ? '当前授权未生效。认领群组/频道和自定义 AI 配置已锁定，授权生效后才能修改。' : '当前没有有效订阅。认领群组/频道和自定义 AI 配置已锁定，开通订阅后才能修改。')
         : '当前账号已具备高级设置修改权限，可认领聊天并配置自定义 AI。';
-      setPremiumLocked(locked, '当前没有有效订阅。此区域已锁定，开通订阅后才能修改。');
+      setPremiumLocked(locked, isBuyerBuild ? '当前授权未生效。此区域已锁定，授权生效后才能修改。' : '当前没有有效订阅。此区域已锁定，开通订阅后才能修改。');
       renderUserProducts(data.products || []);
 
       syncUserOrderFilterOptions(data.orders || []);

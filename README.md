@@ -30,3 +30,4 @@ bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/m
 - 支持多种种支付接口。
 - 对接魔方财务，实现TG群组积分兑换续期码/优惠码，平台绑定TG，在群守护功能。（需配合我的魔方插件）
 - 其他功能在 [体验群组](https://t.me/vitebits) 中功能体验！
+- 支持TG更新推送及更新！

@@ -670,11 +670,11 @@ cmd_menu() {
     printf "3) 启动服务\n"
     printf "4) 重启服务\n"
     printf "5) 停止服务\n"
-    printf "6) 查看日志\n"
+    printf "6) 获取机器码\n"
     printf "7) 查看状态\n"
     printf "8) 立即更新\n"
-    printf "9) 卸载\n"
-    printf "10) 获取机器码\n"
+    printf "9) 查看日志\n"
+    printf "10) 卸载\n"
     printf "0) 退出\n"
 
     local choice=""
@@ -702,7 +702,8 @@ cmd_menu() {
         pause_for_enter
         ;;
       6)
-        cmd_logs
+        run_menu_action "获取机器码" cmd_machine_code
+        pause_for_enter
         ;;
       7)
         run_menu_action "查看状态" cmd_status
@@ -713,11 +714,10 @@ cmd_menu() {
         pause_for_enter
         ;;
       9)
-        run_menu_action "卸载" cmd_uninstall
-        pause_for_enter
+        cmd_logs
         ;;
       10)
-        run_menu_action "获取机器码" cmd_machine_code
+        run_menu_action "卸载" cmd_uninstall
         pause_for_enter
         ;;
       0|q|Q|quit|exit)

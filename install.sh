@@ -14,6 +14,7 @@ DEFAULT_WEBHOOK_QUEUE_MAX="10000"
 DEFAULT_SESSION_QUEUE_MAX_PER_KEY="400"
 DEFAULT_SESSION_QUEUE_MAX_GLOBAL="6000"
 DEFAULT_UPDATE_APPLY_TIMEOUT_SECONDS="600"
+NGINX_SITE_NAME="tg-antispam.conf"
 
 SUDO=""
 if [[ "${EUID}" -ne 0 ]]; then
@@ -83,6 +84,53 @@ ensure_pm2() {
   log "安装 PM2 ..."
   run_privileged npm install -g pm2
   log "PM2 安装完成"
+}
+
+ensure_nginx() {
+  if command -v nginx >/dev/null 2>&1; then
+    log "Nginx 已安装"
+    return
+  fi
+  log "安装 Nginx ..."
+  ensure_apt_available
+  run_privileged apt-get update -y
+  run_privileged apt-get install -y nginx
+  log "Nginx 安装完成"
+}
+
+ensure_certbot() {
+  if command -v certbot >/dev/null 2>&1; then
+    log "Certbot 已安装"
+    return
+  fi
+  log "安装 Certbot（含 Nginx 插件）..."
+  ensure_apt_available
+  run_privileged apt-get update -y
+  run_privileged apt-get install -y certbot python3-certbot-nginx
+  log "Certbot 安装完成"
+}
+
+ensure_certbot_renewal() {
+  local hook_file="/etc/letsencrypt/renewal-hooks/deploy/reload-nginx.sh"
+  local tmp_file
+  tmp_file="$(mktemp)"
+  cat >"${tmp_file}" <<'EOF'
+#!/usr/bin/env bash
+set -e
+systemctl reload nginx >/dev/null 2>&1 || true
+EOF
+  run_privileged mkdir -p "/etc/letsencrypt/renewal-hooks/deploy"
+  run_privileged cp "${tmp_file}" "${hook_file}"
+  run_privileged chmod +x "${hook_file}"
+  rm -f "${tmp_file}"
+
+  if systemctl list-unit-files 2>/dev/null | grep -q '^certbot.timer'; then
+    run_privileged systemctl enable certbot.timer >/dev/null 2>&1 || true
+    run_privileged systemctl start certbot.timer >/dev/null 2>&1 || true
+    log "已启用证书自动续期: certbot.timer"
+  else
+    log "未检测到 certbot.timer，请手动验证续期任务"
+  fi
 }
 
 clone_or_update_repo() {
@@ -211,6 +259,118 @@ generate_random_token() {
     return
   fi
   od -An -N24 -tx1 /dev/urandom | tr -d ' \n'
+}
+
+configure_nginx_reverse_proxy() {
+  local web_base_url="$1"
+  web_base_url="$(normalize_base_url "${web_base_url}")"
+  [[ -n "${web_base_url}" ]] || return
+
+  local scheme="${web_base_url%%://*}"
+  local rest="${web_base_url#*://}"
+  local host_port="${rest%%/*}"
+  local host="${host_port%%:*}"
+  [[ -n "${host}" ]] || return
+
+  local conf_file="/etc/nginx/sites-available/${NGINX_SITE_NAME}"
+  local enabled_file="/etc/nginx/sites-enabled/${NGINX_SITE_NAME}"
+  local tmp_file
+  local cert_email
+
+  local cert_dir="/etc/letsencrypt/live/${host}"
+  local fullchain="${cert_dir}/fullchain.pem"
+  local privkey="${cert_dir}/privkey.pem"
+  local has_ssl_cert="0"
+  if [[ -f "${fullchain}" && -f "${privkey}" ]]; then
+    has_ssl_cert="1"
+  fi
+
+  # 先写 HTTP 反代，保证 certbot 挑战可访问
+  tmp_file="$(mktemp)"
+  cat >"${tmp_file}" <<EOF
+server {
+  listen 80;
+  server_name ${host};
+
+  client_max_body_size 20m;
+
+  location / {
+    proxy_pass http://127.0.0.1:${DEFAULT_WEB_PORT};
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header Upgrade \$http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 600s;
+  }
+}
+EOF
+  run_privileged cp "${tmp_file}" "${conf_file}"
+  rm -f "${tmp_file}"
+
+  run_privileged ln -sf "${conf_file}" "${enabled_file}"
+  run_privileged rm -f /etc/nginx/sites-enabled/default
+  run_privileged nginx -t
+  run_privileged systemctl enable nginx >/dev/null 2>&1 || true
+  run_privileged systemctl restart nginx
+
+  if [[ "${scheme}" == "https" && "${has_ssl_cert}" != "1" ]]; then
+    ensure_certbot
+    cert_email="$(prompt_value "请输入证书通知邮箱（Let's Encrypt）" "")"
+    [[ -n "${cert_email}" ]] || die "证书通知邮箱不能为空"
+    log "开始申请 HTTPS 证书: ${host}"
+    run_privileged certbot certonly --nginx -d "${host}" --non-interactive --agree-tos -m "${cert_email}" --keep-until-expiring
+    if [[ -f "${fullchain}" && -f "${privkey}" ]]; then
+      has_ssl_cert="1"
+      log "HTTPS 证书申请成功"
+    else
+      die "HTTPS 证书申请失败，请确认域名 DNS 已解析到本机且 80/443 端口可访问"
+    fi
+  fi
+
+  if [[ "${scheme}" == "https" ]]; then
+    tmp_file="$(mktemp)"
+    cat >"${tmp_file}" <<EOF
+server {
+  listen 80;
+  server_name ${host};
+  return 301 https://\$host\$request_uri;
+}
+
+server {
+  listen 443 ssl;
+  server_name ${host};
+
+  ssl_certificate ${fullchain};
+  ssl_certificate_key ${privkey};
+
+  client_max_body_size 20m;
+
+  location / {
+    proxy_pass http://127.0.0.1:${DEFAULT_WEB_PORT};
+    proxy_http_version 1.1;
+    proxy_set_header Host \$host;
+    proxy_set_header X-Real-IP \$remote_addr;
+    proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto \$scheme;
+    proxy_set_header Upgrade \$http_upgrade;
+    proxy_set_header Connection "upgrade";
+    proxy_read_timeout 600s;
+  }
+}
+EOF
+    run_privileged cp "${tmp_file}" "${conf_file}"
+    rm -f "${tmp_file}"
+    run_privileged nginx -t
+    run_privileged systemctl restart nginx
+    ensure_certbot_renewal
+    log "已配置 Nginx HTTPS 反代: ${host} -> 127.0.0.1:${DEFAULT_WEB_PORT}"
+    return
+  fi
+
+  log "已配置 Nginx HTTP 反代: ${host} -> 127.0.0.1:${DEFAULT_WEB_PORT}"
 }
 
 configure_env_interactive() {
@@ -347,6 +507,8 @@ EOF
   else
     log "WEBHOOK_URL/WEBHOOK_SECRET 已留空（Polling 模式）"
   fi
+
+  configure_nginx_reverse_proxy "${web_base_url}"
 }
 
 ensure_update_script_ready() {
@@ -385,6 +547,7 @@ cmd_install() {
   ensure_base_tools
   ensure_nodejs
   ensure_pm2
+  ensure_nginx
   clone_or_update_repo "${repo_url}"
   install_dependencies
   configure_env_interactive
@@ -396,6 +559,7 @@ cmd_install() {
 
 cmd_env() {
   [[ -d "${APP_DIR}" ]] || die "目录不存在: ${APP_DIR}，请先执行 install"
+  ensure_nginx
   configure_env_interactive
   log "如需生效请执行: $0 restart"
 }

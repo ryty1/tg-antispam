@@ -4,3 +4,23 @@
 ```bash
 bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/main/install.sh)
 ```
+# 安装变量说明
+- 机器人令牌（BOT_TOKEN）
+- 管理员 Chat ID（ADMIN_USER_ID）
+- 授权服务器地址（LICENSE_SERVER_URL）
+- 授权码（LICENSE_KEY）
+- 机器人 `/console` 管理后台是否使用 HTTPS 域名（y/N）
+  - N：自动生成 http://IP:8787 (Polling 模式)
+  - y：你输入 https://你的域名  (Webhook 模式) 推荐，需要提前进行域名解析！
+
+- 是否自定义 AI 接口（y/N）
+  - N：AI接口 1/2/3 默认留空，也可以在 `/console` 中后续设置！
+  - y：手动输入 AI接口1（必填），AI接口 2/3（可选）
+  ```
+  格式： 接口|key|模型|模式
+   https://openai.com/v1|sk-xxxxxxxxxxxx|gpt-5.4-mini|chat
+   https://openai.com/v1|sk-xxxxxxxxxxxx|gpt-5.4-mini|chat
+   https://openai.com/v1|sk-xxxxxxxxxxxx|gpt-5.4-mini|chat
+  ```
+- 如果选 HTTPS，还会额外问：
+  - 证书通知邮箱（用于 Certbot 申请证书）

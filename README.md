@@ -10,7 +10,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/m
 - [授权服务器地址](https://t.me/kadssvip_bot) `（必填）`
 - [授权码](https://t.me/kadssvip_bot) `（必填）`
   ```
-  授权服务器地址 和 授权码 在 平台机器人
+  授权服务器地址 和 授权码 在 平台机器人【KADSS】
   
   发送 `/console` 登录后台授权中心。
   ```

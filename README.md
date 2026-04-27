@@ -5,17 +5,17 @@
 bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/main/install.sh)
 ```
 # 安装变量说明
-- 机器人令牌（BOT_TOKEN）
-- 管理员 Chat ID（ADMIN_USER_ID）
-- 授权服务器地址（必填）
-- 授权码（必填）
+- 机器人TOKEN令牌 `（必填）`
+- 你的 Chat ID `（必填）`
+- 授权服务器地址 `（必填）`
+- 授权码 `（必填）`
   [获取地址](https://t.me/kadssvip_bot),发送 `/console` 登录后台授权。
   
-- 机器人 `/console` 管理后台是否使用 HTTPS 域名（y/N）
+- 机器人 `/console` 管理后台是否使用 HTTPS 域名（y/N） `（选填）`
   - N：自动生成 http://IP:8787 (Polling 模式)
   - y：你输入 https://你的域名  (Webhook 模式) 推荐，需要提前进行域名解析！
 
-- 是否自定义 AI 接口（y/N）
+- 是否自定义 AI 接口（y/N） `（选填）`
   - N：AI接口 1/2/3 默认留空，也可以在 `/console` 中后续设置！
   - y：手动输入 AI接口1（必填），AI接口 2/3（可选）
   ```

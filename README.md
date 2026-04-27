@@ -26,3 +26,9 @@ bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/m
   ```
 - 如果选 HTTPS，还会额外问：
   - 证书通知邮箱（用于 Certbot 申请证书）
+
+# 部署效果
+- 获得与 [KADSS](https://t.me/kadssvip_bot),一模一样的效果，允许授权用户自己管理自己的订阅用户。
+- 支持多种种支付接口。
+- 对接魔方财务，实现TG群组积分兑换续期码/优惠码，平台绑定TG，在群守护功能。（需配合我的魔方插件）
+- 其他功能在 [体验群组](https://t.me/vitebits) 中功能体验！

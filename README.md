@@ -21,8 +21,6 @@ bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/m
   ```
   格式： 接口|key|模型|模式
    https://openai.com/v1|sk-xxxxxxxxxxxx|gpt-5.4-mini|chat
-   https://openai.com/v1|sk-xxxxxxxxxxxx|gpt-5.4-mini|chat
-   https://openai.com/v1|sk-xxxxxxxxxxxx|gpt-5.4-mini|chat
   ```
 - 如果选 HTTPS，还会额外问：
   - 证书通知邮箱（用于 Certbot 申请证书）

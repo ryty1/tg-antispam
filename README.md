@@ -10,7 +10,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/m
 - 授权服务器地址 `（必填）`
 - 授权码 `（必填）`
   ```
-  授权服务器地址 和 授权码 [获取地址](https://t.me/kadssvip_bot),发送 `/console` 登录后台授权中心。
+  授权服务器地址 和 授权码 [获取地址](https://t.me/kadssvip_bot)
+  发送 `/console` 登录后台授权中心。
   ```
 - 机器人 `/console` 管理后台是否使用 HTTPS 域名（y/N） `（选填）`
   - N：自动生成 http://IP:8787 (Polling 模式)

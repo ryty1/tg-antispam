@@ -866,6 +866,7 @@
       background: linear-gradient(180deg, #f4f8ff 0%, #eaf1ff 100%);
       color: #5872a1;
       font-weight: 700;
+      font-size: 17px;
       line-height: 1.2;
       white-space: nowrap;
     }
@@ -926,13 +927,15 @@
       gap: 6px;
       align-items: center;
       min-width: 0;
+      margin-left: auto;
     }
 
     .license-product-card .product-card-footer {
       flex-direction: row;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: space-between;
       gap: 10px;
+      width: 100%;
     }
 
     .license-product-card .product-card-price-pill {
@@ -1443,6 +1446,13 @@
       margin-top: 14px;
     }
 
+    .admin-topbar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 12px;
+    }
+
     .locked-panel {
       position: relative;
       background: linear-gradient(180deg, rgba(17, 24, 39, 0.82), rgba(17, 24, 39, 0.74));
@@ -1476,15 +1486,15 @@
 
     .user-shell {
       display: grid;
-      grid-template-columns: 240px minmax(0, 1fr);
+      grid-template-columns: 196px minmax(0, 1fr);
       gap: 18px;
       align-items: start;
       position: relative;
-      transition: grid-template-columns .22s ease;
+      transition: grid-template-columns .2s ease;
     }
 
     .user-shell.sidebar-collapsed {
-      grid-template-columns: 0 minmax(0, 1fr);
+      grid-template-columns: 84px minmax(0, 1fr);
     }
 
     .user-sidebar {
@@ -1492,16 +1502,17 @@
       top: 18px;
       padding: 0;
       overflow: hidden;
-      width: 240px;
-      transition: transform .22s ease, opacity .22s ease;
+      width: 196px;
+      transition: width .2s ease;
       transform: translateX(0);
       opacity: 1;
     }
 
     .user-shell.sidebar-collapsed .user-sidebar {
-      transform: translateX(calc(-100% - 18px));
-      opacity: 0;
-      pointer-events: none;
+      width: 84px;
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .user-sidebar-head {
@@ -1515,6 +1526,17 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
+      min-height: 40px;
+      overflow: hidden;
+    }
+
+    .sidebar-head-row h2 {
+      margin: 0;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      min-width: 0;
     }
 
     .sidebar-toggle-btn,
@@ -1527,8 +1549,18 @@
       padding: 0;
       border-radius: 12px;
       flex: 0 0 auto;
-      font-size: 18px;
+      font-size: 0;
       line-height: 1;
+    }
+
+    .sidebar-toggle-btn::before,
+    .sidebar-open-btn::before {
+      content: "";
+      width: 16px;
+      height: 2px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 -5px 0 currentColor, 0 5px 0 currentColor;
     }
 
     .sidebar-open-btn {
@@ -1537,7 +1569,37 @@
     }
 
     .user-shell.sidebar-collapsed .sidebar-open-btn.user {
-      display: inline-flex;
+      display: none;
+    }
+
+    .user-shell.sidebar-collapsed .user-sidebar-head {
+      padding: 16px 10px 12px;
+    }
+
+    .user-shell.sidebar-collapsed .user-sidebar h2,
+    .user-shell.sidebar-collapsed .user-sidebar .sub {
+      display: none;
+    }
+
+    .user-shell.sidebar-collapsed .sidebar-head-row {
+      justify-content: center;
+    }
+
+    .user-shell.sidebar-collapsed .user-nav {
+      padding: 8px 6px;
+      gap: 6px;
+    }
+
+    .user-shell.sidebar-collapsed .user-nav .tabbtn {
+      width: 100%;
+      min-width: 100%;
+      justify-content: center;
+      padding: 12px 0;
+      min-height: 48px;
+    }
+
+    .user-shell.sidebar-collapsed .user-nav .tabbtn-label {
+      display: none;
     }
 
     .user-nav {
@@ -1548,7 +1610,10 @@
 
     .user-nav .tabbtn {
       width: 100%;
+      display: inline-flex;
+      align-items: center;
       justify-content: flex-start;
+      gap: 10px;
       min-width: 0;
       color: var(--text);
       background: rgba(148, 163, 184, 0.08);
@@ -1557,6 +1622,41 @@
       padding: 12px 14px;
       font-weight: 600;
       flex: initial;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .user-nav .tabbtn-icon {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: inherit;
+    }
+
+    .user-nav .tabbtn-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .user-nav .tabbtn-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-nav .tabbtn-icon,
+    .user-nav .tabbtn-icon *,
+    .user-nav .tabbtn-label {
+      pointer-events: none;
     }
 
     .user-nav .tabbtn.active {
@@ -1629,15 +1729,15 @@
 
     .admin-shell {
       display: grid;
-      grid-template-columns: 260px minmax(0, 1fr);
+      grid-template-columns: 196px minmax(0, 1fr);
       gap: 18px;
       align-items: start;
       position: relative;
-      transition: grid-template-columns .22s ease;
+      transition: grid-template-columns .2s ease;
     }
 
     .admin-shell.sidebar-collapsed {
-      grid-template-columns: 0 minmax(0, 1fr);
+      grid-template-columns: 84px minmax(0, 1fr);
     }
 
     .admin-sidebar {
@@ -1645,16 +1745,17 @@
       top: 18px;
       padding: 0;
       overflow: hidden;
-      width: 260px;
-      transition: transform .22s ease, opacity .22s ease;
+      width: 196px;
+      transition: width .2s ease;
       transform: translateX(0);
       opacity: 1;
     }
 
     .admin-shell.sidebar-collapsed .admin-sidebar {
-      transform: translateX(calc(-100% - 18px));
-      opacity: 0;
-      pointer-events: none;
+      width: 84px;
+      transform: translateX(0);
+      opacity: 1;
+      pointer-events: auto;
     }
 
     .admin-sidebar-head {
@@ -1684,13 +1785,51 @@
 
     .admin-nav-btn {
       width: 100%;
+      display: inline-flex;
+      align-items: center;
       justify-content: flex-start;
+      gap: 10px;
       border-radius: 14px;
       padding: 12px 14px;
       color: var(--text);
       background: rgba(148, 163, 184, 0.08);
       border: 1px solid rgba(148, 163, 184, 0.12);
       font-weight: 600;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .admin-nav-btn-icon {
+      width: 18px;
+      height: 18px;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: inherit;
+    }
+
+    .admin-nav-btn-icon svg {
+      width: 18px;
+      height: 18px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.9;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .admin-nav-btn-label {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .admin-nav-btn-icon,
+    .admin-nav-btn-icon *,
+    .admin-nav-btn-label {
+      pointer-events: none;
     }
 
     .admin-nav-btn.active {
@@ -1706,7 +1845,42 @@
     }
 
     .admin-shell.sidebar-collapsed .sidebar-open-btn.admin {
-      display: inline-flex;
+      display: none;
+    }
+
+    .admin-shell.sidebar-collapsed .admin-sidebar-head {
+      padding: 16px 10px 12px;
+    }
+
+    .admin-shell.sidebar-collapsed .admin-sidebar h2,
+    .admin-shell.sidebar-collapsed .admin-sidebar .sub,
+    .admin-shell.sidebar-collapsed .admin-nav-title {
+      display: none;
+    }
+
+    .admin-shell.sidebar-collapsed .sidebar-head-row {
+      justify-content: center;
+    }
+
+    .admin-shell.sidebar-collapsed .admin-sidebar-body {
+      padding: 8px 6px;
+      gap: 10px;
+    }
+
+    .admin-shell.sidebar-collapsed .admin-nav-group {
+      gap: 6px;
+    }
+
+    .admin-shell.sidebar-collapsed .admin-nav-btn {
+      width: 100%;
+      min-width: 100%;
+      justify-content: center;
+      padding: 12px 0;
+      min-height: 48px;
+    }
+
+    .admin-shell.sidebar-collapsed .admin-nav-btn-label {
+      display: none;
     }
 
     .admin-pane-head {
@@ -2459,6 +2633,40 @@
       display: block;
     }
 
+    .desktop-overview-stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .desktop-dashboard-announcement {
+      display: block;
+      position: relative;
+      margin-top: 0;
+      overflow: hidden;
+    }
+
+    .desktop-dashboard-announcement::after {
+      content: "公告";
+      position: absolute;
+      top: 10px;
+      right: -26px;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 108px;
+      height: 28px;
+      border: 1px solid rgba(255, 240, 189, 0.42);
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: #2a1600;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.1em;
+      box-shadow: 0 8px 18px rgba(245, 158, 11, 0.22);
+      transform: rotate(45deg);
+      transform-origin: center;
+    }
+
     .mobile-bottom-nav,
     .mobile-nav-sheet-backdrop {
       display: none;
@@ -2658,7 +2866,9 @@
         display: block;
       }
 
-      body.mobile-app-shell #page-overview.active .desktop-overview-panel {
+      body.mobile-app-shell #page-overview.active .desktop-overview-panel,
+      body.mobile-app-shell #page-overview.active .desktop-overview-stack,
+      body.mobile-app-shell .desktop-dashboard-announcement {
         display: none;
       }
 
@@ -4325,7 +4535,10 @@
       <div id="publicAnnouncementBox" class="announcement-box hidden"></div>
     </section>
 
-    <div id="statusBar" class="status-bar">等待操作。</div>
+    <div class="row" style="margin-bottom: 14px; align-items: center; gap: 12px;">
+      <div id="statusBar" class="status-bar" style="margin-bottom: 0; flex: 1 1 auto;">等待操作。</div>
+      <button id="adminRefreshBtn" class="secondary hidden" type="button">刷新全局数据</button>
+    </div>
 
     <section id="loginCard" class="card" style="margin-bottom: 18px;">
       <h2>登录</h2>
@@ -4344,30 +4557,29 @@
         <aside class="card user-sidebar">
           <div class="user-sidebar-head">
             <div class="sidebar-head-row">
-              <h2>用户控制台</h2>
+              <h2>控制前台</h2>
               <button class="sidebar-toggle-btn secondary" id="userSidebarToggleBtn" type="button"
-                title="收起侧栏">◀</button>
+                title="收起侧栏" aria-label="收起侧栏"></button>
             </div>
-            <p class="sub">每个功能一个独立面板，按左侧菜单进入对应设置页。</p>
           </div>
           <div class="user-nav" id="mainTabs">
-            <button class="tabbtn active" id="mainTabOverview" data-main-tab="overview" type="button">概览</button>
-            <button class="tabbtn" id="mainTabEntitlements" data-main-tab="entitlements" type="button">订阅权限</button>
-            <button class="tabbtn" id="mainTabRecharge" data-main-tab="recharge" type="button">账户充值</button>
-            <button class="tabbtn" id="mainTabPlans" data-main-tab="plans" type="button">我要订阅</button>
-            <button class="tabbtn" id="mainTabLicense" data-main-tab="license" type="button">授权中心</button>
-            <button class="tabbtn" id="mainTabOrders" data-main-tab="orders" type="button">我的订单</button>
-            <button class="tabbtn" id="mainTabFinance" data-main-tab="finance" type="button">资金记录</button>
-            <button class="tabbtn" id="mainTabChats" data-main-tab="chats" type="button">群组与频道</button>
-            <button class="tabbtn" id="mainTabShop" data-main-tab="shop" type="button">积分商城</button>
-            <button class="tabbtn" id="mainTabAi" data-main-tab="ai" type="button">AI 配置</button>
-            <button class="tabbtn" id="mainTabDocs" data-main-tab="docs" type="button">使用文档</button>
-            <button class="tabbtn hidden" id="adminMainTabBtn" data-main-tab="admin" type="button">后台</button>
+            <button class="tabbtn active" id="mainTabOverview" data-main-tab="overview" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"></path><path d="M5 9.5V21h14V9.5"></path></svg></span><span class="tabbtn-label">概览</span></button>
+            <button class="tabbtn" id="mainTabEntitlements" data-main-tab="entitlements" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 5-3 7.5-7 9-4-1.5-7-4-7-9V7l7-4z"></path><path d="M9.5 12 11 13.5 14.5 10"></path></svg></span><span class="tabbtn-label">订阅权限</span></button>
+            <button class="tabbtn" id="mainTabRecharge" data-main-tab="recharge" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M3 10h18"></path><path d="M7 14h3"></path></svg></span><span class="tabbtn-label">账户充值</span></button>
+            <button class="tabbtn" id="mainTabPlans" data-main-tab="plans" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2v20"></path><path d="M17 6.5c0-1.7-2-3-5-3s-5 1.3-5 3 1.4 2.6 4 3l2 .5c2.6.4 4 1.3 4 3 0 1.9-2.2 3.5-5 3.5s-5-1.6-5-3.5"></path></svg></span><span class="tabbtn-label">我要订阅</span></button>
+            <button class="tabbtn" id="mainTabLicense" data-main-tab="license" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3"></path><rect x="5" y="10" width="14" height="11" rx="2"></rect><path d="M12 14v3"></path></svg></span><span class="tabbtn-label">授权中心</span></button>
+            <button class="tabbtn" id="mainTabOrders" data-main-tab="orders" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10l2 4H5l2-4z"></path><path d="M6 8h12v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8z"></path><path d="M9 12h6"></path></svg></span><span class="tabbtn-label">我的订单</span></button>
+            <button class="tabbtn" id="mainTabFinance" data-main-tab="finance" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-4"></path></svg></span><span class="tabbtn-label">资金记录</span></button>
+            <button class="tabbtn" id="mainTabChats" data-main-tab="chats" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15a3 3 0 0 1-3 3H9l-5 3V6a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg></span><span class="tabbtn-label">群组管理</span></button>
+            <button class="tabbtn" id="mainTabShop" data-main-tab="shop" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 7h15l-1.5 8h-11z"></path><path d="M6 7 5 4H3"></path><circle cx="9" cy="19" r="1.5"></circle><circle cx="18" cy="19" r="1.5"></circle></svg></span><span class="tabbtn-label">积分商城</span></button>
+            <button class="tabbtn" id="mainTabAi" data-main-tab="ai" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="7" width="12" height="10" rx="2"></rect><path d="M9 17v2"></path><path d="M15 17v2"></path><path d="M9 4v3"></path><path d="M15 4v3"></path><path d="M8.5 11h.01"></path><path d="M15.5 11h.01"></path><path d="M9.5 14c.8.7 1.6 1 2.5 1s1.7-.3 2.5-1"></path></svg></span><span class="tabbtn-label">AI 配置</span></button>
+            <button class="tabbtn" id="mainTabDocs" data-main-tab="docs" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 3h8l4 4v14H7z"></path><path d="M15 3v5h5"></path><path d="M10 12h6"></path><path d="M10 16h6"></path></svg></span><span class="tabbtn-label">使用文档</span></button>
+            <button class="tabbtn hidden" id="adminMainTabBtn" data-main-tab="admin" type="button"><span class="tabbtn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l2.2 2.1 3-.4.9 2.9 2.7 1.4-1 2.8 1 2.8-2.7 1.4-.9 2.9-3-.4L12 21l-2.2-2.1-3 .4-.9-2.9-2.7-1.4 1-2.8-1-2.8 2.7-1.4.9-2.9 3 .4z"></path><circle cx="12" cy="12" r="3"></circle></svg></span><span class="tabbtn-label">管理后台</span></button>
           </div>
         </aside>
 
         <div class="user-content">
-          <button class="sidebar-open-btn user secondary" id="userSidebarOpenBtn" type="button" title="展开侧栏">▶</button>
+          <button class="sidebar-open-btn user secondary" id="userSidebarOpenBtn" type="button" title="展开侧栏" aria-label="展开侧栏"></button>
           <div id="page-overview" class="page active">
             <div class="mobile-mini-home">
               <section class="mobile-home-hero">
@@ -4486,40 +4698,44 @@
               </div>
             </div>
 
-            <div class="card user-page-panel desktop-overview-panel">
-              <div class="section-head">
-                <div>
-                  <h2>账户概览</h2>
-                  <p class="sub">查看余额、套餐状态、认领额度和基础账号信息。</p>
+            <div class="desktop-overview-stack">
+              <div id="dashboardAnnouncementBox" class="announcement-box desktop-dashboard-announcement hidden"></div>
+
+              <div class="card user-page-panel desktop-overview-panel">
+                <div class="section-head">
+                  <div>
+                    <h2>账户概览</h2>
+                    <p class="sub">查看余额、套餐状态、认领额度和基础账号信息。</p>
+                  </div>
                 </div>
-              </div>
-              <div class="grid">
-                <div class="span-3 metric">
-                  <div class="small muted">账户余额</div>
-                  <div class="value" id="metricBalance">¥0.00</div>
-                </div>
-                <div class="span-3 metric">
-                  <div class="small muted">当前套餐</div>
-                  <div class="value" id="metricPlan">None</div>
-                </div>
-                <div class="span-3 metric">
-                  <div class="small muted">已认领聊天</div>
-                  <div class="value" id="metricChats">0</div>
-                </div>
-                <div class="span-3 metric">
-                  <div class="small muted">认领上限</div>
-                  <div class="value" id="metricQuota">0</div>
-                </div>
-                <div class="span-4 card">
-                  <h2>账户信息</h2>
-                  <div class="stack small" id="accountInfo"></div>
-                </div>
-                <div class="span-8 card">
-                  <h2>订阅状态</h2>
-                  <div class="row" id="subscriptionSummary"></div>
-                  <div class="notice" id="paymentNote"></div>
-                  <div class="notice" id="claimQuotaNote"></div>
-                  <div class="notice" id="premiumLockNote"></div>
+                <div class="grid">
+                  <div class="span-3 metric">
+                    <div class="small muted">账户余额</div>
+                    <div class="value" id="metricBalance">¥0.00</div>
+                  </div>
+                  <div class="span-3 metric">
+                    <div class="small muted">当前套餐</div>
+                    <div class="value" id="metricPlan">None</div>
+                  </div>
+                  <div class="span-3 metric">
+                    <div class="small muted">已认领聊天</div>
+                    <div class="value" id="metricChats">0</div>
+                  </div>
+                  <div class="span-3 metric">
+                    <div class="small muted">认领上限</div>
+                    <div class="value" id="metricQuota">0</div>
+                  </div>
+                  <div class="span-4 card">
+                    <h2>账户信息</h2>
+                    <div class="stack small" id="accountInfo"></div>
+                  </div>
+                  <div class="span-8 card">
+                    <h2>订阅状态</h2>
+                    <div class="row" id="subscriptionSummary"></div>
+                    <div class="notice" id="paymentNote"></div>
+                    <div class="notice" id="claimQuotaNote"></div>
+                    <div class="notice" id="premiumLockNote"></div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -5084,52 +5300,40 @@
                 <aside class="card admin-sidebar">
                   <div class="admin-sidebar-head">
                     <div class="sidebar-head-row">
-                      <h2>超级管理员后台</h2>
+                      <h2>管理后台</h2>
                       <button class="sidebar-toggle-btn secondary" id="adminSidebarToggleBtn" type="button"
-                        title="收起侧栏">◀</button>
+                        title="收起侧栏" aria-label="收起侧栏"></button>
                     </div>
-                    <p class="sub">按功能拆分设置面板，避免所有配置堆在同一页。</p>
                   </div>
                   <div class="admin-sidebar-body" id="adminTabs">
                     <div class="admin-nav-group">
                       <div class="admin-nav-title">财务</div>
-                      <button class="admin-nav-btn" data-admin-tab="balance" type="button">余额调整</button>
-                      <button class="admin-nav-btn" data-admin-tab="payment" type="button">支付设置</button>
-                      <button class="admin-nav-btn" data-admin-tab="finance" type="button">财务记录</button>
+                      <button class="admin-nav-btn" data-admin-tab="balance" type="button"><span class="admin-nav-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2v20"></path><path d="M17 6.5c0-1.7-2-3-5-3s-5 1.3-5 3 1.4 2.6 4 3l2 .5c2.6.4 4 1.3 4 3 0 1.9-2.2 3.5-5 3.5s-5-1.6-5-3.5"></path></svg></span><span class="admin-nav-btn-label">余额调整</span></button>
+                      <button class="admin-nav-btn" data-admin-tab="payment" type="button"><span class="admin-nav-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"></rect><path d="M3 10h18"></path><path d="M7 14h3"></path></svg></span><span class="admin-nav-btn-label">支付设置</span></button>
+                      <button class="admin-nav-btn" data-admin-tab="finance" type="button"><span class="admin-nav-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 19h16"></path><path d="M7 16V9"></path><path d="M12 16V5"></path><path d="M17 16v-4"></path></svg></span><span class="admin-nav-btn-label">财务记录</span></button>
                     </div>
                     <div class="admin-nav-group">
                       <div class="admin-nav-title">内容</div>
-                      <button class="admin-nav-btn" data-admin-tab="announcement" type="button">公告设置</button>
-                      <button class="admin-nav-btn" data-admin-tab="products" type="button">商品设置</button>
-                      <button class="admin-nav-btn" data-admin-tab="licenses" type="button">授权自营</button>
+                      <button class="admin-nav-btn" data-admin-tab="announcement" type="button"><span class="admin-nav-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 11V7a2 2 0 0 1 2-2h9l5 5v1"></path><path d="M14 5v5h5"></path><path d="M6 15h12"></path><path d="M6 19h9"></path></svg></span><span class="admin-nav-btn-label">公告设置</span></button>
+                      <button class="admin-nav-btn" data-admin-tab="products" type="button"><span class="admin-nav-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4 7v10l8 4 8-4V7l-8-4z"></path><path d="M4 7l8 4 8-4"></path><path d="M12 11v10"></path></svg></span><span class="admin-nav-btn-label">商品设置</span></button>
+                      <button class="admin-nav-btn" data-admin-tab="licenses" type="button"><span class="admin-nav-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 10V7a5 5 0 0 1 10 0v3"></path><rect x="5" y="10" width="14" height="11" rx="2"></rect><path d="M12 14v3"></path></svg></span><span class="admin-nav-btn-label">授权自营</span></button>
                     </div>
                     <div class="admin-nav-group">
                       <div class="admin-nav-title">运营</div>
-                      <button class="admin-nav-btn" data-admin-tab="orders" type="button">订单管理</button>
-                      <button class="admin-nav-btn" data-admin-tab="users" type="button">账号管理</button>
-                      <button class="admin-nav-btn" data-admin-tab="chats" type="button">群组/频道</button>
+                      <button class="admin-nav-btn" data-admin-tab="orders" type="button"><span class="admin-nav-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4h10l2 4H5l2-4z"></path><path d="M6 8h12v11a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8z"></path><path d="M9 12h6"></path></svg></span><span class="admin-nav-btn-label">订单管理</span></button>
+                      <button class="admin-nav-btn" data-admin-tab="users" type="button"><span class="admin-nav-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"></path><circle cx="10" cy="7" r="4"></circle><path d="M21 21v-2a4 4 0 0 0-3-3.87"></path><path d="M14 3.13a4 4 0 0 1 0 7.75"></path></svg></span><span class="admin-nav-btn-label">账号管理</span></button>
+                      <button class="admin-nav-btn" data-admin-tab="chats" type="button"><span class="admin-nav-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 15a3 3 0 0 1-3 3H9l-5 3V6a3 3 0 0 1 3-3h11a3 3 0 0 1 3 3z"></path><path d="M8 9h8"></path><path d="M8 13h5"></path></svg></span><span class="admin-nav-btn-label">群组管理</span></button>
                     </div>
                     <div class="admin-nav-group">
-                      <button class="admin-nav-btn secondary" id="adminBackToUserBtn" type="button">返回用户</button>
+                      <button class="admin-nav-btn secondary" id="adminBackToUserBtn" type="button"><span class="admin-nav-btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"></path><path d="M9 12h10"></path></svg></span><span class="admin-nav-btn-label">返回用户</span></button>
                     </div>
                   </div>
                 </aside>
 
                 <div class="admin-content">
                   <button class="sidebar-open-btn admin secondary" id="adminSidebarOpenBtn" type="button"
-                    title="展开侧栏">▶</button>
-                  <div class="card">
-                    <div class="section-head">
-                      <div>
-                        <h2>后台工作台</h2>
-                        <p class="sub">`ADMIN_USER_ID` 专用后台。每个标签只负责一类功能，进入后单独配置与管理。</p>
-                      </div>
-                      <div class="row">
-                        <button id="adminRefreshBtn" class="secondary" type="button">刷新全局数据</button>
-                      </div>
-                    </div>
-                    <div class="notice hidden admin-action-notice" id="adminActionNotice"></div>
-                  </div>
+                    title="展开侧栏" aria-label="展开侧栏"></button>
+                  <div class="notice hidden admin-action-notice" id="adminActionNotice"></div>
 
                   <div id="admin-balance-pane" class="admin-pane">
                     <div class="card">
@@ -6676,16 +6880,22 @@
     }
 
     function applyPublicAnnouncement(text, isLoggedIn, html = '') {
-      const box = document.getElementById('publicAnnouncementBox');
+      const publicBox = document.getElementById('publicAnnouncementBox');
+      const dashboardBox = document.getElementById('dashboardAnnouncementBox');
       const content = String(text || '').trim();
       const renderedHtml = String(html || '').trim();
-      if (isLoggedIn || !content) {
-        box.classList.add('hidden');
-        box.innerHTML = '';
+      const nextHtml = content ? `<div class="markdown-doc">${renderedHtml || markdownToHtml(content)}</div>` : '';
+      if (!content) {
+        publicBox.classList.add('hidden');
+        publicBox.innerHTML = '';
+        dashboardBox.classList.add('hidden');
+        dashboardBox.innerHTML = '';
         return;
       }
-      box.innerHTML = `<div class="markdown-doc">${renderedHtml || markdownToHtml(content)}</div>`;
-      box.classList.remove('hidden');
+      publicBox.innerHTML = nextHtml;
+      publicBox.classList.toggle('hidden', !!isLoggedIn);
+      dashboardBox.innerHTML = nextHtml;
+      dashboardBox.classList.toggle('hidden', !isLoggedIn);
     }
 
     function updateWelcomeLimitHints() {
@@ -7086,12 +7296,9 @@
 
     function applyMainTabs() {
       document.getElementById('dashboard').classList.toggle('admin-mode', state.mainTab === 'admin');
+      document.getElementById('adminRefreshBtn').classList.toggle('hidden', state.mainTab !== 'admin');
       document.querySelector('.user-shell')?.classList.toggle('sidebar-collapsed', !!state.userSidebarCollapsed);
       document.querySelector('.admin-shell')?.classList.toggle('sidebar-collapsed', !!state.adminSidebarCollapsed);
-      const userToggleBtn = document.getElementById('userSidebarToggleBtn');
-      const adminToggleBtn = document.getElementById('adminSidebarToggleBtn');
-      if (userToggleBtn) userToggleBtn.textContent = state.userSidebarCollapsed ? '▶' : '◀';
-      if (adminToggleBtn) adminToggleBtn.textContent = state.adminSidebarCollapsed ? '▶' : '◀';
       document.querySelectorAll('[data-main-tab]').forEach((btn) => {
         btn.classList.toggle('active', btn.getAttribute('data-main-tab') === state.mainTab);
       });
@@ -7399,7 +7606,7 @@
           <h3>${safeText(product.title)}</h3>
           <p class="sub">${safeText(product.description || '暂无描述')}</p>
           <div class="product-card-footer">
-            <span class="product-card-price-pill">${formatMoney(product.amount_cents)} / ${product.months} 月</span>
+            <span class="product-card-price-pill">${formatMoney(product.amount_cents)}</span>
             <button class="planBtn plan-action-btn" data-product-key="${product.product_key}" type="button">立即订阅</button>
           </div>
         </div>
@@ -7624,7 +7831,7 @@
           <div class="title">${escapeHtml(product.title || '未命名套餐')}</div>
           <div class="meta">${product.months} 个月 · ${Number(product.chat_limit || 0) > 0 ? `最多认领 ${product.chat_limit} 个群组` : '认领额度不限'}</div>
           <div class="product-card-footer">
-            <span class="product-card-price-pill">${formatMoney(product.amount_cents)} / ${product.months} 月</span>
+            <span class="product-card-price-pill">${formatMoney(product.amount_cents)}</span>
             <button class="mobile-product-btn" data-product-key="${escapeHtml(product.product_key)}" type="button">立即订阅</button>
           </div>
         </div>

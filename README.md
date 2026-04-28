@@ -34,3 +34,31 @@ bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/m
 - 对接魔方财务，实现TG群组积分兑换续期码/优惠码，平台绑定TG，在群守护功能。（需配合我的魔方插件）
 - 其他功能在 [体验群组](https://t.me/vitebits) 中功能体验！
 - 支持TG更新推送及更新！
+
+# Commands 菜单快捷模版
+```
+console - 订阅控制台
+ads - UI主面板
+ban - 封禁目标
+unban - 解封目标
+jy - 禁言
+unjy - 解除禁言
+cj - 发起抽奖
+dc - 查询DC中心
+id - 查询用户信息
+jf - 查询本人积分
+dh - 兑换邀请码
+shop - 积分商城
+yq - 查看邀请券
+importset - 积分覆盖
+importadd - 积分追加
+wladd - 添加白名单
+wlrm - 移除白名单
+safe - 标记正常样本
+ww - 创建狼人杀大厅
+wd - 谁是卧底大厅
+rr - 俄罗斯轮盘大厅
+dd - 决斗
+21 - 21点
+nn - 牛牛斗牛
+```

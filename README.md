@@ -39,12 +39,12 @@ bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/m
 ```
 console - 订阅控制台
 ads - UI主面板
-ban - 封禁目标
+ban - 封禁/举报目标
 unban - 解封目标
-jy - 禁言
+jy - 禁言可带时长
 unjy - 解除禁言
 cj - 发起抽奖
-dc - 查询DC中心
+dc - 查询DC数据中心
 id - 查询用户信息
 jf - 查询本人积分
 dh - 兑换邀请码

@@ -5631,6 +5631,92 @@
     </div>
   </div>
 
+  <div id="kwConfigModal" class="modal-backdrop hidden">
+    <div class="modal-card welcome-modal">
+      <div class="section-head" style="margin-bottom: 0;">
+        <div>
+          <h2 id="kwModalTitle">关键词规则配置</h2>
+          <p id="kwModalMeta" class="sub"></p>
+        </div>
+        <div class="row">
+          <span id="kwModalStatus" class="pill warn">新规则</span>
+        </div>
+      </div>
+      <div class="welcome-editor-grid">
+        <div class="span-full">
+          <label for="kwModalKeywords">关键字（可多个）</label>
+          <input id="kwModalKeywords" placeholder="例如：签到,/checkin,sign">
+          <div class="field-meta"><span id="kwModalKeywordsHint">多个关键字用英文逗号分隔</span></div>
+        </div>
+        <div>
+          <label for="kwModalMatchMode">匹配方式</label>
+          <select id="kwModalMatchMode">
+            <option value="exact">精准匹配</option>
+            <option value="include">模糊匹配</option>
+            <option value="regexp">正则匹配</option>
+          </select>
+        </div>
+        <div>
+          <label for="kwModalAction">操作</label>
+          <select id="kwModalAction">
+            <option value="reply">回复</option>
+            <option value="mute">禁言</option>
+            <option value="ban">封禁</option>
+          </select>
+        </div>
+        <div class="span-full">
+          <label for="kwModalContent">内容</label>
+          <textarea id="kwModalContent" class="welcome-textarea" maxlength="3500" placeholder="支持完整 Markdown 与变量：{mention} {name} {username} {id} {chat_title}"></textarea>
+        </div>
+        <div class="span-full">
+          <label for="kwModalButtons">按钮布局（可选）</label>
+          <textarea id="kwModalButtons" class="welcome-buttons-textarea" maxlength="600" placeholder="每行一个按钮：按钮文字 | https://example.com&#10;空一行表示换行"></textarea>
+        </div>
+        <div>
+          <label for="kwModalCaseSensitive">区分大小写（高级）</label>
+          <select id="kwModalCaseSensitive">
+            <option value="0">否</option>
+            <option value="1">是</option>
+          </select>
+        </div>
+        <div>
+          <label for="kwModalIgnoreForward">忽略转发消息（高级）</label>
+          <select id="kwModalIgnoreForward">
+            <option value="0">否</option>
+            <option value="1">是</option>
+          </select>
+        </div>
+        <div>
+          <label for="kwModalDeleteSource">删除触发源消息（高级）</label>
+          <select id="kwModalDeleteSource">
+            <option value="0">否</option>
+            <option value="1">是</option>
+          </select>
+        </div>
+        <div>
+          <label for="kwModalDelayDelete">定时删除（秒，可选）</label>
+          <input id="kwModalDelayDelete" type="number" min="0" placeholder="0 = 不自动删除">
+        </div>
+        <div id="kwSourceDelayDeleteField" class="hidden">
+          <label for="kwModalSourceDelayDelete">源消息延时删除（秒）</label>
+          <input id="kwModalSourceDelayDelete" type="number" min="0" placeholder="0 = 立即删除">
+        </div>
+        <div id="kwRestrictSecondsField" class="hidden">
+          <label for="kwModalRestrictSeconds">禁言时长（秒，高级）</label>
+          <input id="kwModalRestrictSeconds" type="number" min="0" placeholder="留空或 0 = 默认 600 秒">
+        </div>
+      </div>
+      <div class="row" style="margin-top: 14px; justify-content: space-between; align-items: center;">
+        <button id="kwModalResetBtn" class="secondary" type="button">重置表单</button>
+        <div class="row">
+          <button id="kwModalCancelBtn" class="secondary" type="button">取消</button>
+          <button id="kwModalSaveBtn" type="button">保存规则</button>
+        </div>
+      </div>
+      <div class="list" id="kwRulesList" style="margin-top: 14px;"></div>
+    </div>
+  </div>
+
   <script>
     const state = {
       me: null,
@@ -5643,6 +5729,8 @@
       purchaseProduct: null,
       purchaseMode: 'subscription',
       welcomeChatId: 0,
+      kwChatId: 0,
+      kwEditingRuleId: 0,
       shopSelectedChatId: 0,
       shopSceneFilter: '',
       shopExpandedItemIds: [],
@@ -6727,6 +6815,163 @@
       syncOverlayState();
     }
 
+    function resetKwRuleForm(rule = null) {
+      state.kwEditingRuleId = Number(rule?.id || 0);
+      document.getElementById('kwModalKeywords').value = rule?.keywords || '';
+      document.getElementById('kwModalMatchMode').value = rule?.matchMode || 'include';
+      document.getElementById('kwModalAction').value = rule?.action || 'reply';
+      document.getElementById('kwModalContent').value = rule?.content || '';
+      document.getElementById('kwModalButtons').value = rule?.buttonsSpec || '';
+      document.getElementById('kwModalDelayDelete').value = String(Math.max(0, Number(rule?.deleteDelaySeconds || 0)));
+      document.getElementById('kwModalSourceDelayDelete').value = String(Math.max(0, Number(rule?.sourceDelayDeleteSeconds || 0)));
+      document.getElementById('kwModalCaseSensitive').value = rule?.caseSensitive ? '1' : '0';
+      document.getElementById('kwModalIgnoreForward').value = rule?.ignoreForward ? '1' : '0';
+      document.getElementById('kwModalDeleteSource').value = rule?.deleteSource ? '1' : '0';
+      document.getElementById('kwModalRestrictSeconds').value = String(Math.max(0, Number(rule?.restrictSeconds || 0)));
+      document.getElementById('kwModalStatus').textContent = state.kwEditingRuleId > 0 ? `编辑规则 #${state.kwEditingRuleId}` : '新规则';
+      document.getElementById('kwModalStatus').className = `pill ${state.kwEditingRuleId > 0 ? 'ok' : 'warn'}`;
+      syncKwMatchModeFields();
+      syncKwActionFields();
+      syncKwDeleteSourceFields();
+    }
+
+    function syncKwMatchModeFields() {
+      const mode = document.getElementById('kwModalMatchMode').value;
+      const hint = document.getElementById('kwModalKeywordsHint');
+      const input = document.getElementById('kwModalKeywords');
+      if (mode === 'regexp') {
+        hint.textContent = '输入单条正则表达式，例如：^/sign(?:@\\w+)?$';
+        input.placeholder = '例如：^/sign(?:@\\w+)?$';
+        return;
+      }
+      hint.textContent = '多个关键字用英文逗号分隔';
+      input.placeholder = '例如：签到,/checkin,sign';
+    }
+
+    function syncKwActionFields() {
+      const action = document.getElementById('kwModalAction').value;
+      document.getElementById('kwRestrictSecondsField').classList.toggle('hidden', action !== 'mute');
+    }
+
+    function syncKwDeleteSourceFields() {
+      const enabled = document.getElementById('kwModalDeleteSource').value === '1';
+      document.getElementById('kwSourceDelayDeleteField').classList.toggle('hidden', !enabled);
+    }
+
+    function validateKwButtonsSpec(spec) {
+      const raw = String(spec || '');
+      if (raw.length > 600) {
+        throw new Error('按钮布局最多 600 个字符');
+      }
+      const lines = raw.replace(/\r/g, '').split('\n');
+      for (const lineRaw of lines) {
+        const line = lineRaw.trim();
+        if (!line) continue;
+        const splitAt = line.indexOf('|');
+        if (splitAt <= 0) {
+          throw new Error('按钮格式错误，请使用“按钮文字 | https://example.com”');
+        }
+        const text = line.slice(0, splitAt).trim();
+        const url = line.slice(splitAt + 1).trim();
+        if (!text || !url) {
+          throw new Error('按钮格式错误，请同时填写按钮文字和跳转链接');
+        }
+        if (!/^(https?:\/\/|tg:\/\/|mailto:)/i.test(url)) {
+          throw new Error(`按钮链接无效：${url}`);
+        }
+      }
+    }
+
+    function normalizeKwRules(payload) {
+      const rows = Array.isArray(payload?.rules) ? payload.rules : [];
+      return rows.map((rule) => ({
+        id: Number(rule?.id || 0),
+        keywords: String(rule?.keywords || '').trim(),
+        matchMode: (() => {
+          const mode = String(rule?.matchMode || 'include').trim().toLowerCase();
+          return mode === 'exact' ? 'exact' : mode === 'regexp' ? 'regexp' : 'include';
+        })(),
+        action: ['reply', 'mute', 'ban'].includes(String(rule?.action || '').trim().toLowerCase()) ? String(rule.action).trim().toLowerCase() : 'reply',
+        content: String(rule?.content || '').trim(),
+        buttonsSpec: String(rule?.buttonsSpec || '').trim(),
+        deleteDelaySeconds: Math.max(0, Number(rule?.deleteDelaySeconds || 0)),
+        sourceDelayDeleteSeconds: Math.max(0, Number(rule?.sourceDelayDeleteSeconds || 0)),
+        caseSensitive: rule?.caseSensitive === true,
+        ignoreForward: rule?.ignoreForward === true,
+        deleteSource: rule?.deleteSource === true,
+        restrictSeconds: Math.max(0, Number(rule?.restrictSeconds || 0)),
+      })).filter((rule) => rule.id > 0);
+    }
+
+    function renderKwRulesList(rules) {
+      const list = document.getElementById('kwRulesList');
+      if (!Array.isArray(rules) || !rules.length) {
+        list.innerHTML = '<div class="item muted small">暂无关键词规则</div>';
+        return;
+      }
+      list.innerHTML = rules.map((rule) => {
+        const modeLabel = rule.matchMode === 'exact' ? '精准匹配' : rule.matchMode === 'regexp' ? '正则匹配' : '模糊匹配';
+        const actionLabel = rule.action === 'ban' ? '封禁' : rule.action === 'mute' ? '禁言' : '回复';
+        const optionTags = [
+          rule.caseSensitive ? '区分大小写' : '',
+          rule.ignoreForward ? '忽略转发' : '',
+          rule.deleteSource ? `删源${rule.sourceDelayDeleteSeconds > 0 ? `(${rule.sourceDelayDeleteSeconds}s)` : ''}` : '',
+          rule.restrictSeconds > 0 ? `禁言${rule.restrictSeconds}s` : '',
+          rule.action === 'ban' ? '永久封禁' : '',
+        ].filter(Boolean).join(' · ');
+        const preview = safeText(rule.content || '').replace(/\n+/g, ' ').slice(0, 120);
+        return `
+          <div class="item stack">
+            <div class="row" style="justify-content: space-between; align-items: flex-start;">
+              <div>
+                <div class="cell-strong">#${rule.id} · ${escapeHtml(rule.keywords || '-')}</div>
+                <div class="small muted">${modeLabel} · ${actionLabel}${rule.deleteDelaySeconds > 0 ? ` · ${rule.deleteDelaySeconds}s 删除` : ''}</div>
+                ${optionTags ? `<div class="small muted">${escapeHtml(optionTags)}</div>` : ''}
+                <div class="small muted">${escapeHtml(preview || '(无内容)')}</div>
+              </div>
+              <div class="row">
+                <button class="kwEditRuleBtn secondary" data-rule-id="${rule.id}" type="button">编辑</button>
+                <button class="kwDeleteRuleBtn secondary" data-rule-id="${rule.id}" type="button">删除</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function openKwConfigModal(chatId) {
+      const chat = getOwnedChatById(chatId);
+      if (!chat) {
+        setStatus('未找到该绑定群组，请刷新页面后重试。');
+        return;
+      }
+      state.kwChatId = Number(chat.chat_id || 0);
+      document.getElementById('kwModalTitle').textContent = `${chat.title || chat.chat_id} · 关键词规则`;
+      document.getElementById('kwModalMeta').textContent = `${chat.chat_id} · ${chat.chat_type}${chat.username ? ` · @${chat.username}` : ''}`;
+      resetKwRuleForm(null);
+      renderKwRulesList([]);
+      document.getElementById('kwConfigModal').classList.remove('hidden');
+      syncOverlayState();
+      try {
+        setStatus('正在加载关键词规则...');
+        const data = await request(`/api/chats/kw-rules?chatId=${encodeURIComponent(String(state.kwChatId))}`, { method: 'GET', headers: {} });
+        const rules = normalizeKwRules(data);
+        const targetChat = getOwnedChatById(state.kwChatId);
+        if (targetChat) targetChat.kwRules = rules;
+        renderKwRulesList(rules);
+        setStatus('关键词规则已加载。');
+      } catch (error) {
+        setStatus(error.message || '加载关键词规则失败');
+      }
+    }
+
+    function closeKwConfigModal() {
+      state.kwChatId = 0;
+      state.kwEditingRuleId = 0;
+      document.getElementById('kwConfigModal').classList.add('hidden');
+      syncOverlayState();
+    }
+
     function renderAdminTable(targetId, type, columns, rowsHtml) {
       const el = document.getElementById(targetId);
       if (!rowsHtml.length) {
@@ -6810,7 +7055,8 @@
 
     function syncOverlayState() {
       const hasModalOpen = !document.getElementById('purchaseModal').classList.contains('hidden')
-        || !document.getElementById('welcomeConfigModal').classList.contains('hidden');
+        || !document.getElementById('welcomeConfigModal').classList.contains('hidden')
+        || !document.getElementById('kwConfigModal').classList.contains('hidden');
       document.body.classList.toggle('modal-open', hasModalOpen);
     }
 
@@ -7712,6 +7958,7 @@
                 <span class="pill ${welcomeConfig.enabled ? 'ok' : 'warn'}">欢迎语${welcomeConfig.enabled ? '已启用' : '未启用'}</span>
                 <div class="chat-card-btns">
                   <button class="openWelcomeConfigBtn secondary" data-chat-id="${chat.chat_id}" type="button" ${lockedAttr}>欢迎语配置</button>
+                  <button class="openKwConfigBtn secondary" data-chat-id="${chat.chat_id}" type="button" ${lockedAttr}>关键词规则</button>
                   <button class="userUnbindChatBtn secondary" data-chat-id="${chat.chat_id}" type="button">解绑</button>
                 </div>
               </div>
@@ -7959,6 +8206,151 @@
 
     document.getElementById('welcomeModalText').addEventListener('input', updateWelcomeLimitHints);
     document.getElementById('welcomeModalButtons').addEventListener('input', updateWelcomeLimitHints);
+    document.getElementById('kwModalMatchMode').addEventListener('change', syncKwMatchModeFields);
+    document.getElementById('kwModalAction').addEventListener('change', syncKwActionFields);
+    document.getElementById('kwModalDeleteSource').addEventListener('change', syncKwDeleteSourceFields);
+
+    document.getElementById('kwModalCancelBtn').addEventListener('click', () => {
+      closeKwConfigModal();
+      setStatus('已取消关键词规则配置。');
+    });
+
+    document.getElementById('kwConfigModal').addEventListener('click', (event) => {
+      if (event.target === document.getElementById('kwConfigModal')) {
+        closeKwConfigModal();
+      }
+    });
+
+    document.getElementById('kwModalResetBtn').addEventListener('click', () => {
+      resetKwRuleForm(null);
+      setStatus('已重置关键词规则表单。');
+    });
+
+    document.getElementById('kwModalSaveBtn').addEventListener('click', async () => {
+      const chatId = Number(state.kwChatId || 0);
+      if (!chatId) {
+        setStatus('未找到当前关键词规则配置对象，请关闭后重试。');
+        return;
+      }
+      const keywords = document.getElementById('kwModalKeywords').value.trim();
+      const content = document.getElementById('kwModalContent').value.trim();
+      const buttonsSpec = document.getElementById('kwModalButtons').value.trim();
+      const matchMode = document.getElementById('kwModalMatchMode').value;
+      const action = document.getElementById('kwModalAction').value;
+      const deleteDelaySeconds = Math.max(0, Number(document.getElementById('kwModalDelayDelete').value || 0));
+      const sourceDelayDeleteSeconds = Math.max(0, Number(document.getElementById('kwModalSourceDelayDelete').value || 0));
+      const caseSensitive = document.getElementById('kwModalCaseSensitive').value === '1';
+      const ignoreForward = document.getElementById('kwModalIgnoreForward').value === '1';
+      const deleteSource = document.getElementById('kwModalDeleteSource').value === '1';
+      const restrictSeconds = Math.max(0, Number(document.getElementById('kwModalRestrictSeconds').value || 0));
+      if (!keywords || !content) {
+        setStatus('关键词和回复内容不能为空。');
+        return;
+      }
+      if (!['include', 'exact', 'regexp'].includes(matchMode)) {
+        setStatus('匹配方式无效，请刷新后重试。');
+        return;
+      }
+      if (keywords.length > 180) {
+        setStatus('关键词最多 180 个字符。');
+        return;
+      }
+      if (content.length > 3500) {
+        setStatus('回复内容最多 3500 个字符。');
+        return;
+      }
+      if (deleteDelaySeconds > 604800 || sourceDelayDeleteSeconds > 604800) {
+        setStatus('延迟删除秒数不能超过 604800 秒。');
+        return;
+      }
+      if (restrictSeconds > 315360000) {
+        setStatus('禁言时长不能超过 10 年。');
+        return;
+      }
+      if (matchMode === 'regexp') {
+        try {
+          new RegExp(keywords, caseSensitive ? 'g' : 'gi');
+        } catch {
+          setStatus('正则表达式无效，请检查关键词。');
+          return;
+        }
+      }
+      try {
+        validateKwButtonsSpec(buttonsSpec);
+      } catch (error) {
+        setStatus(error?.message || '按钮布局格式错误');
+        return;
+      }
+      try {
+        setStatus(state.kwEditingRuleId > 0 ? `正在更新规则 #${state.kwEditingRuleId} ...` : '正在创建关键词规则...');
+        const payload = {
+          chatId,
+          ruleId: state.kwEditingRuleId || 0,
+          keywords,
+          matchMode,
+          action,
+          content,
+          buttonsSpec,
+          deleteDelaySeconds,
+          sourceDelayDeleteSeconds: deleteSource ? sourceDelayDeleteSeconds : 0,
+          caseSensitive,
+          ignoreForward,
+          deleteSource,
+        };
+        if (action === 'mute' && restrictSeconds > 0) {
+          payload.restrictSeconds = restrictSeconds;
+        }
+        const data = await request('/api/chats/kw-rules/upsert', {
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+        const rules = normalizeKwRules(data);
+        const chat = getOwnedChatById(chatId);
+        if (chat) chat.kwRules = rules;
+        renderKwRulesList(rules);
+        resetKwRuleForm(null);
+        setStatus('关键词规则已保存。');
+      } catch (error) {
+        setStatus(error.message || '保存关键词规则失败');
+      }
+    });
+
+    document.getElementById('kwRulesList').addEventListener('click', async (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const ruleId = Number(target.getAttribute('data-rule-id') || target.closest('[data-rule-id]')?.getAttribute('data-rule-id') || 0);
+      if (!ruleId) return;
+      const chat = getOwnedChatById(state.kwChatId);
+      const rules = Array.isArray(chat?.kwRules) ? chat.kwRules : [];
+      const rule = rules.find((item) => Number(item.id || 0) === ruleId);
+      const editBtn = target.closest('.kwEditRuleBtn');
+      if (editBtn) {
+        if (!rule) return;
+        resetKwRuleForm(rule);
+        setStatus(`正在编辑规则 #${ruleId}`);
+        return;
+      }
+      const deleteBtn = target.closest('.kwDeleteRuleBtn');
+      if (!deleteBtn) return;
+      if (!window.confirm(`确认删除关键词规则 #${ruleId} 吗？`)) {
+        setStatus('已取消删除。');
+        return;
+      }
+      try {
+        setStatus(`正在删除规则 #${ruleId} ...`);
+        const data = await request('/api/chats/kw-rules/delete', {
+          method: 'POST',
+          body: JSON.stringify({ chatId: state.kwChatId, ruleId }),
+        });
+        const nextRules = normalizeKwRules(data);
+        if (chat) chat.kwRules = nextRules;
+        renderKwRulesList(nextRules);
+        if (state.kwEditingRuleId === ruleId) resetKwRuleForm(null);
+        setStatus('关键词规则已删除。');
+      } catch (error) {
+        setStatus(error.message || '删除关键词规则失败');
+      }
+    });
 
     document.getElementById('purchaseConfirmBtn').addEventListener('click', async () => {
       const product = state.purchaseProduct;
@@ -8166,6 +8558,13 @@
         const chatId = Number(configBtn.getAttribute('data-chat-id') || 0);
         if (!chatId) return;
         openWelcomeConfigModal(chatId);
+        return;
+      }
+      const kwConfigBtn = target.closest('.openKwConfigBtn');
+      if (kwConfigBtn) {
+        const chatId = Number(kwConfigBtn.getAttribute('data-chat-id') || 0);
+        if (!chatId) return;
+        openKwConfigModal(chatId);
         return;
       }
       const unbindBtn = target.closest('.userUnbindChatBtn');

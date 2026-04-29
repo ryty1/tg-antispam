@@ -512,7 +512,7 @@ EOF
 }
 
 ensure_update_script_ready() {
-  local update_script="${APP_DIR}/update-buyer.sh"
+  local update_script="${APP_DIR}/update.sh"
   [[ -f "${update_script}" ]] || die "缺少更新脚本: ${update_script}"
   chmod +x "${update_script}"
   log "已设置更新脚本执行权限: ${update_script}"
@@ -588,7 +588,7 @@ cmd_status() {
 }
 
 cmd_update_now() {
-  local update_script="${APP_DIR}/update-buyer.sh"
+  local update_script="${APP_DIR}/update.sh"
   [[ -x "${update_script}" ]] || die "更新脚本不存在或不可执行: ${update_script}"
   "${update_script}"
 }

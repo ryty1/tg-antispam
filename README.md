@@ -39,7 +39,7 @@ bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/m
 ```
 console - 订阅控制台
 ads - UI主面板
-ban - 封禁/举报目标
+ban - 封禁或举报
 unban - 解封目标
 jy - 禁言可带时长
 unjy - 解除禁言

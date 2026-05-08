@@ -5124,8 +5124,8 @@
                     <div class="span-4">
                       <label for="shopNewPromoScene">优惠码场景</label>
                       <select id="shopNewPromoScene">
-                        <option value="purchase">购买</option>
-                        <option value="renew">续费</option>
+                        <option value="purchase">新开</option>
+                        <option value="renew">续期</option>
                       </select>
                     </div>
                     <div class="span-4">
@@ -5251,8 +5251,8 @@
                 <div class="shop-list-head">
                   <h3>已配置商品</h3>
                   <div id="shopItemsSceneTabs" class="shop-scene-tabs">
-                    <button id="shopScenePurchaseTab" class="shop-scene-tab" data-shop-scene="purchase" type="button">新购 <span id="shopScenePurchaseCount" class="shop-scene-tab-count">0</span></button>
-                    <button id="shopSceneRenewTab" class="shop-scene-tab" data-shop-scene="renew" type="button">续费 <span id="shopSceneRenewCount" class="shop-scene-tab-count">0</span></button>
+                    <button id="shopScenePurchaseTab" class="shop-scene-tab" data-shop-scene="purchase" type="button">新开 <span id="shopScenePurchaseCount" class="shop-scene-tab-count">0</span></button>
+                    <button id="shopSceneRenewTab" class="shop-scene-tab" data-shop-scene="renew" type="button">续期 <span id="shopSceneRenewCount" class="shop-scene-tab-count">0</span></button>
                   </div>
                 </div>
                 <div id="shopItemsList" class="list" style="margin-top: 14px;"></div>
@@ -6385,7 +6385,7 @@
     }
 
     function getShopSceneLabel(scene) {
-      return String(scene || '') === 'renew' ? '续费' : '新购';
+      return String(scene || '') === 'renew' ? '续期' : '新开';
     }
 
     function formatShopItemSummary(item) {
@@ -6701,7 +6701,7 @@
             <div class="span-4"><label for="shopItem_${item.id}_Stock">库存</label><input id="shopItem_${item.id}_Stock" value="${escapeHtml(String(item.stock || 0))}" ${locked ? 'disabled' : ''}></div>
             <div class="span-4"><label for="shopItem_${item.id}_SortOrder">排序</label><input id="shopItem_${item.id}_SortOrder" value="${escapeHtml(String(item.sort_order || 0))}" ${locked ? 'disabled' : ''}></div>
             <div class="span-4"><label for="shopItem_${item.id}_Enabled">状态</label><select id="shopItem_${item.id}_Enabled" ${locked ? 'disabled' : ''}><option value="1" ${item.enabled ? 'selected' : ''}>启用</option><option value="0" ${item.enabled ? '' : 'selected'}>停用</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoScene">优惠码场景</label><select id="shopItem_${item.id}_PromoScene" ${locked ? 'disabled' : ''}><option value="purchase" ${item.promo_scene === 'purchase' ? 'selected' : ''}>购买</option><option value="renew" ${item.promo_scene === 'renew' ? 'selected' : ''}>续费</option></select></div>
+            <div class="span-4"><label for="shopItem_${item.id}_PromoScene">优惠码场景</label><select id="shopItem_${item.id}_PromoScene" ${locked ? 'disabled' : ''}><option value="purchase" ${item.promo_scene === 'purchase' ? 'selected' : ''}>新开</option><option value="renew" ${item.promo_scene === 'renew' ? 'selected' : ''}>续期</option></select></div>
             <div class="span-4"><label for="shopItem_${item.id}_PromoType">优惠类型</label><select id="shopItem_${item.id}_PromoType" ${locked ? 'disabled' : ''}><option value="percent" ${item.promo_type === 'percent' ? 'selected' : ''}>百分比</option><option value="fixed" ${item.promo_type === 'fixed' ? 'selected' : ''}>固定金额</option><option value="override" ${item.promo_type === 'override' ? 'selected' : ''}>覆盖价格</option><option value="free" ${item.promo_type === 'free' ? 'selected' : ''}>免费/免安装</option></select></div>
             <div class="span-4"><label for="shopItem_${item.id}_PromoValue">优惠值</label><input id="shopItem_${item.id}_PromoValue" value="${escapeHtml(String(item.promo_value || 0))}" ${locked ? 'disabled' : ''}></div>
             <div class="span-12"><label for="shopItem_${item.id}_Description">描述</label><input id="shopItem_${item.id}_Description" value="${escapeHtml(item.description || '')}" ${locked ? 'disabled' : ''}></div>
@@ -7669,6 +7669,7 @@
     function renderLicenseCenter(data) {
       const products = Array.isArray(data?.licenseProducts) ? data.licenseProducts : [];
       const licenses = Array.isArray(data?.licenseKeys) ? data.licenseKeys : [];
+      const licenseProductByKey = new Map(products.map((product) => [String(product.product_key || '').trim(), product]));
       const webBaseUrl = String(data?.webBaseUrl || '').trim();
       const serverNotice = document.getElementById('licenseServerNotice');
       if (serverNotice) {
@@ -7712,12 +7713,14 @@
         const statusLabel = statusRaw === 'revoked' ? '已停用' : isExpired ? '已过期' : '生效中';
         const statusTone = statusRaw === 'revoked' || isExpired ? 'danger' : 'ok';
         const machines = Array.isArray(license.machines) ? license.machines : [];
+        const productInfo = licenseProductByKey.get(String(license.product_key || '').trim()) || license;
+        const productLabel = getLicenseProductDisplayTitle(productInfo);
         return `
           <div class="license-key-card stack">
             <div class="license-key-top">
               <div>
                 <div class="cell-strong">${escapeHtml(license.license_key || '')}</div>
-                <div class="small muted">产品 ${escapeHtml(license.product_key || '-')} · 到期 ${escapeHtml(expiresAt || '-')}</div>
+                <div class="small muted">产品 ${escapeHtml(productLabel || '-')} · 到期 ${escapeHtml(expiresAt || '-')}</div>
               </div>
               <div class="license-key-actions">
                 <span class="pill ${statusTone}">${statusLabel}</span>
@@ -7980,18 +7983,21 @@
       `);
 
       const licenseKeys = Array.isArray(overview?.licenseKeys) ? overview.licenseKeys : [];
+      const licenseProductByKey = new Map((Array.isArray(overview?.licenseProducts) ? overview.licenseProducts : []).map((product) => [String(product.product_key || '').trim(), product]));
       const adminLicensePage = paginateItems(licenseKeys, 'adminLicenseKeys');
       renderList(document.getElementById('adminLicenseKeysList'), adminLicensePage.items, (key) => {
         const status = String(key.status || '').toLowerCase();
         const statusLabel = status === 'revoked' ? '已停用' : '生效中';
         const machines = Array.isArray(key.machines) ? key.machines : [];
+        const productInfo = licenseProductByKey.get(String(key.product_key || '').trim()) || key;
+        const productLabel = getLicenseProductDisplayTitle(productInfo);
         return `
           <div class="admin-license-key-card stack">
             <div class="row" style="justify-content: space-between; align-items: flex-start;">
               <div>
                 <div class="cell-strong">${escapeHtml(key.license_key || '')}</div>
                 <div class="small muted">用户 ${key.user_id} ${key.display_name ? `· ${escapeHtml(key.display_name)}` : ''}${key.username ? ` (@${escapeHtml(key.username)})` : ''}</div>
-                <div class="small muted">商品 ${escapeHtml(key.product_key || '-')} · 到期 ${escapeHtml(key.expires_at || '-')} · 设备 ${Math.max(0, Number(key.machine_count || 0))}/${Math.max(1, Number(key.max_machines || 1))}</div>
+                <div class="small muted">商品 ${escapeHtml(productLabel || '-')} · 到期 ${escapeHtml(key.expires_at || '-')} · 设备 ${Math.max(0, Number(key.machine_count || 0))}/${Math.max(1, Number(key.max_machines || 1))}</div>
               </div>
               <div class="row">
                 <span class="pill ${status === 'revoked' ? 'danger' : 'ok'}">${statusLabel}</span>

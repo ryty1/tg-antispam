@@ -14,9 +14,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/m
   
   发送 `/console` 登录后台授权中心。
   ```
-- 机器人 `/console` 管理后台是否使用 HTTPS 域名（y/N） `（选填）`
-  - N：自动生成 http://IP:8787 (Polling 模式)
-  - y：你输入 https://你的域名  (Webhook 模式) 推荐，需要提前进行域名解析！
+- 机器人 `/console` 管理后台使用 HTTPS 域名 `（必填）`
+  - 输入 https://你的域名  (Webhook 模式) 推荐，需要提前进行域名解析！
 
 - 是否自定义 AI 接口（y/N） `（选填）`
   - N：AI接口 1/2/3 默认留空，也可以在 `/console` 中后续设置！

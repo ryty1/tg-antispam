@@ -202,57 +202,6 @@ normalize_base_url() {
   printf "%s" "${raw}"
 }
 
-detect_local_ipv4() {
-  local ip=""
-
-  if command -v hostname >/dev/null 2>&1; then
-    local candidates
-    candidates="$(hostname -I 2>/dev/null || true)"
-    for ip in ${candidates}; do
-      if [[ "${ip}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] && [[ "${ip}" != "127.0.0.1" ]]; then
-        printf "%s" "${ip}"
-        return
-      fi
-    done
-  fi
-
-  if command -v ip >/dev/null 2>&1; then
-    local route
-    route="$(ip -4 route get 1.1.1.1 2>/dev/null || true)"
-    ip="${route##* src }"
-    ip="${ip%% *}"
-    if [[ "${ip}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]] && [[ "${ip}" != "127.0.0.1" ]]; then
-      printf "%s" "${ip}"
-      return
-    fi
-  fi
-
-  printf "127.0.0.1"
-}
-
-detect_public_ipv4() {
-  local ip=""
-  local endpoints=(
-    "https://api-ipv4.ip.sb/ip"
-    "https://ip.sb"
-    "http://ip.sb"
-    "https://4.ipw.cn"
-    "https://api.ipify.org"
-    "https://ifconfig.me/ip"
-    "https://ipv4.icanhazip.com"
-  )
-  local endpoint
-  for endpoint in "${endpoints[@]}"; do
-    ip="$(curl -4fsSL --max-time 4 "${endpoint}" 2>/dev/null || true)"
-    ip="$(printf "%s" "${ip}" | tr -d ' \r\n')"
-    if [[ "${ip}" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
-      printf "%s" "${ip}"
-      return
-    fi
-  done
-  printf ""
-}
-
 generate_random_token() {
   if command -v openssl >/dev/null 2>&1; then
     openssl rand -hex 24
@@ -401,13 +350,10 @@ configure_env_interactive() {
   local webhook_secret
   local webhook_path
   local webhook_url
-  local use_https_domain
   local use_custom_ai
   local ai_pool_1
   local ai_pool_2
   local ai_pool_3
-  local local_ip
-  local public_ip
   local existing_https_web_base_url
 
   log "开始在线配置（只问必要项）"
@@ -421,26 +367,12 @@ configure_env_interactive() {
     existing_https_web_base_url="${existing_web_base_url}"
   fi
 
-  read -r -p "是否使用公网 HTTPS 域名作为后台地址？[y/N]: " use_https_domain || true
-  use_https_domain="${use_https_domain:-N}"
-  if [[ "${use_https_domain,,}" == "y" || "${use_https_domain,,}" == "yes" ]]; then
-    web_base_url="$(prompt_keep_existing "请输入公网 HTTPS 域名（示例：https://bot.example.com）" "${existing_https_web_base_url}")"
-    [[ -n "${web_base_url}" ]] || die "公网 HTTPS 域名不能为空"
-    web_base_url="$(normalize_base_url "${web_base_url}")"
-    if [[ ! "${web_base_url}" =~ ^https:// ]]; then
-      die "公网域名必须以 https:// 开头"
-    fi
-  else
-    public_ip="$(detect_public_ipv4)"
-    if [[ -n "${public_ip}" ]]; then
-      local_ip="${public_ip}"
-      log "已识别公网 IP: ${public_ip}"
-    else
-      local_ip="$(detect_local_ipv4)"
-      log "未识别到公网 IP，回退使用内网 IP: ${local_ip}"
-    fi
-    web_base_url="http://${local_ip}:${DEFAULT_WEB_PORT}"
-    log "已使用地址作为后台地址: ${web_base_url}"
+  log "本项目仅支持 HTTPS Webhook 模式，需要一个已解析到本机的公网域名"
+  web_base_url="$(prompt_keep_existing "请输入公网 HTTPS 域名（示例：https://bot.example.com）" "${existing_https_web_base_url}")"
+  [[ -n "${web_base_url}" ]] || die "公网 HTTPS 域名不能为空"
+  web_base_url="$(normalize_base_url "${web_base_url}")"
+  if [[ ! "${web_base_url}" =~ ^https:// ]]; then
+    die "公网域名必须以 https:// 开头（Telegram Webhook 强制 HTTPS）"
   fi
 
   read -r -p "是否自定义 AI 接口配置？[y/N]: " use_custom_ai || true
@@ -463,17 +395,10 @@ configure_env_interactive() {
   [[ -n "${license_key}" ]] || die "授权码不能为空"
   [[ -n "${web_base_url}" ]] || die "后台地址不能为空"
 
-  if [[ "${web_base_url}" =~ ^https:// ]]; then
-    webhook_secret="$(generate_random_token)"
-    webhook_path="$(generate_random_token)"
-    webhook_url="${web_base_url}/api/telegram/webhook/${webhook_path}"
-    log "已启用 Webhook（HTTPS）"
-  else
-    webhook_secret=""
-    webhook_path=""
-    webhook_url=""
-    log "当前为非 HTTPS 地址，已自动关闭 Webhook，使用 Polling 模式启动"
-  fi
+  webhook_secret="$(generate_random_token)"
+  webhook_path="$(generate_random_token)"
+  webhook_url="${web_base_url}/api/telegram/webhook/${webhook_path}"
+  log "已启用 Webhook（HTTPS）"
 
   cat >"${env_file}" <<EOF
 BOT_TOKEN=${bot_token}
@@ -501,12 +426,10 @@ SESSION_QUEUE_MAX_GLOBAL=${DEFAULT_SESSION_QUEUE_MAX_GLOBAL}
 UPDATE_APPLY_TIMEOUT_SECONDS=${DEFAULT_UPDATE_APPLY_TIMEOUT_SECONDS}
 EOF
 
+  chmod 600 "${env_file}"
+
   log ".env 生成完成: ${env_file}"
-  if [[ -n "${webhook_url}" ]]; then
-    log "已自动生成 WEBHOOK_URL 与 WEBHOOK_SECRET"
-  else
-    log "WEBHOOK_URL/WEBHOOK_SECRET 已留空（Polling 模式）"
-  fi
+  log "已自动生成 WEBHOOK_URL 与 WEBHOOK_SECRET"
 
   configure_nginx_reverse_proxy "${web_base_url}"
 }

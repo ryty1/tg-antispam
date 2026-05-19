@@ -355,6 +355,8 @@ configure_env_interactive() {
   local ai_pool_2
   local ai_pool_3
   local existing_https_web_base_url
+  local reverse_proxy_mode
+  local proxy_choice
 
   log "开始在线配置（只问必要项）"
   bot_token="$(prompt_keep_existing "请输入机器人令牌（在 @BotFather 获取）" "${existing_bot_token}")"
@@ -374,6 +376,19 @@ configure_env_interactive() {
   if [[ ! "${web_base_url}" =~ ^https:// ]]; then
     die "公网域名必须以 https:// 开头（Telegram Webhook 强制 HTTPS）"
   fi
+
+  log "请选择反代部署方式："
+  log "  1) 已完成反代（如已通过宝塔等面板手动完成反代，仅生成配置）"
+  log "  2) 一键反代（自动安装 Nginx 并申请 Let's Encrypt 证书）"
+  proxy_choice=""
+  while true; do
+    read -r -p "请输入选项 [1/2]: " proxy_choice || true
+    case "${proxy_choice}" in
+      1) reverse_proxy_mode="manual"; break ;;
+      2) reverse_proxy_mode="auto"; break ;;
+      *) log "无效选项，请输入 1 或 2" ;;
+    esac
+  done
 
   read -r -p "是否自定义 AI 接口配置？[y/N]: " use_custom_ai || true
   use_custom_ai="${use_custom_ai:-N}"
@@ -431,7 +446,15 @@ EOF
   log ".env 生成完成: ${env_file}"
   log "已自动生成 WEBHOOK_URL 与 WEBHOOK_SECRET"
 
-  configure_nginx_reverse_proxy "${web_base_url}"
+  if [[ "${reverse_proxy_mode}" == "auto" ]]; then
+    ensure_nginx
+    configure_nginx_reverse_proxy "${web_base_url}"
+  else
+    local proxy_host="${web_base_url#https://}"
+    proxy_host="${proxy_host%%/*}"
+    log "已选择手动反代模式，跳过 Nginx 安装与配置"
+    log "请确认已在外部（如宝塔面板）完成 ${proxy_host} -> 127.0.0.1:${DEFAULT_WEB_PORT} 的反代配置"
+  fi
 }
 
 ensure_update_script_ready() {
@@ -470,7 +493,6 @@ cmd_install() {
   ensure_base_tools
   ensure_nodejs
   ensure_pm2
-  ensure_nginx
   clone_or_update_repo "${repo_url}"
   install_dependencies
   configure_env_interactive
@@ -482,7 +504,6 @@ cmd_install() {
 
 cmd_env() {
   [[ -d "${APP_DIR}" ]] || die "目录不存在: ${APP_DIR}，请先执行 install"
-  ensure_nginx
   configure_env_interactive
   log "如需生效请执行: $0 restart"
 }

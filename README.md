@@ -16,7 +16,8 @@ bash <(curl -Ls https://raw.githubusercontent.com/ryty1/tg-antispam/refs/heads/m
   ```
 - 机器人 `/console` 管理后台使用 HTTPS 域名 `（必填）`
   - 输入 https://你的域名  (Webhook 模式) 推荐，需要提前进行域名解析！
-  ```bash
+  
+ ```
  如已安装宝塔或1penal面板的，请自己手动反代
  http://127.0.0.1:8787   # 需开启SSL
  ```

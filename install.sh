@@ -542,7 +542,8 @@ cmd_machine_code() {
   [[ -f "${target}" ]] || die "缺少运行文件: ${target}"
 
   local machine_code
-  machine_code="$(node "${target}" --license-machine-code 2>/dev/null || true)"
+  # 必须在 APP_DIR 下执行,确保 license/machine.id 的读写路径和 PM2 启动时一致
+  machine_code="$(cd "${APP_DIR}" && node "${target}" --license-machine-code 2>/dev/null || true)"
   if [[ ! "${machine_code}" =~ ^[a-f0-9]{64}$ ]]; then
     die "获取机器码失败，请确认 Node 环境与运行文件正常"
   fi

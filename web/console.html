@@ -5032,231 +5032,66 @@
             <div id="shopCard" class="card user-page-panel">
               <div class="section-head">
                 <div>
-                  <h2>积分商城</h2>
-                  <p class="sub">给已绑定群组配置积分兑换商品。用户在 TG 侧兑换后，系统会自动到魔方生成同条件优惠码。</p>
+                  <h2 id="shopPageTitle">积分商城</h2>
+                  <p class="sub" id="shopPageSubtitle">给已绑定群组配置积分兑换商品。用户在 TG 侧兑换后，系统会自动到所选接口生成同条件优惠码。</p>
                 </div>
                 <div class="row">
-                  <button id="refreshZjmfCatalogBtn" class="secondary" type="button">刷新魔方目录</button>
+                  <button id="backToShopMainBtn" class="secondary hidden" type="button">← 返回</button>
+                  <button id="refreshZjmfCatalogBtn" class="secondary" type="button">刷新接口数据</button>
                 </div>
               </div>
               <div id="shopLockNotice" class="notice hidden" style="margin-top: 14px;"></div>
 
-              <details class="fold-card" id="shopConfigFold">
-                <summary class="fold-card-summary">接口配置</summary>
-                <div class="fold-card-body">
-                  <div class="grid">
-                    <div class="span-6">
-                      <label for="shopChatSelect">选择群组</label>
-                      <select id="shopChatSelect"></select>
-                      <div id="shopChatPills" class="shop-chat-pills hidden"></div>
+              <div id="shopMainPanel">
+                <details class="fold-card" id="shopConfigFold" open>
+                  <summary class="fold-card-summary">接口配置</summary>
+                  <div class="fold-card-body">
+                    <div class="grid">
+                      <div class="span-6">
+                        <label for="shopChatSelect">选择群组</label>
+                        <select id="shopChatSelect"></select>
+                        <div id="shopChatPills" class="shop-chat-pills hidden"></div>
+                      </div>
+                      <div class="span-3">
+                        <label for="shopProviderSelect">接口选择</label>
+                        <select id="shopProviderSelect">
+                          <option value="off">关闭</option>
+                          <option value="zjmf">魔方财务</option>
+                        </select>
+                      </div>
+                      <div class="span-3">
+                        <label for="shopConfigName">接口简称</label>
+                        <input id="shopConfigName" placeholder="例如 CCS、主站">
+                      </div>
+                      <div class="span-6">
+                        <label for="shopCustomApiUrl">自定义接口地址</label>
+                        <input id="shopCustomApiUrl" placeholder="请填写接口地址，例如 https://域名/api/tg_points_exchange">
+                      </div>
+                      <div class="span-6">
+                        <label for="shopCustomApiToken">密令</label>
+                        <input id="shopCustomApiToken" placeholder="请填写魔方插件里配置的密令">
+                      </div>
                     </div>
-                    <div class="span-3">
-                      <label for="shopProviderSelect">接口选择</label>
-                      <select id="shopProviderSelect">
-                        <option value="off">关闭</option>
-                        <option value="zjmf">魔方财务</option>
-                      </select>
+                    <div class="row" style="justify-content: space-between; align-items: center;">
+                      <span id="shopConfigEditingHint" class="small muted"></span>
+                      <div class="row">
+                        <button id="cancelShopConfigEditBtn" class="secondary hidden" type="button">取消编辑</button>
+                        <button id="saveShopConfigBtn" type="button">保存接口配置</button>
+                      </div>
                     </div>
-                    <div class="span-3">
-                      <label for="shopCatalogStatus">接口状态</label>
-                      <input id="shopCatalogStatus" disabled>
-                    </div>
-                    <div class="span-6">
-                      <label for="shopCustomApiUrl">自定义接口地址</label>
-                      <input id="shopCustomApiUrl" placeholder="请填写接口地址，例如 https://域名/api/tg_points_exchange">
-                    </div>
-                    <div class="span-6">
-                      <label for="shopCustomApiToken">密令</label>
-                      <input id="shopCustomApiToken" placeholder="请填写魔方插件里配置的密令">
-                    </div>
+                    <div id="shopIntegrationNotice" class="notice"></div>
                   </div>
-                  <div class="row" style="justify-content: flex-end;">
-                    <button id="saveShopConfigBtn" type="button">保存接口配置</button>
-                  </div>
-                  <div id="shopIntegrationNotice" class="notice"></div>
-                </div>
-              </details>
+                </details>
 
-              <details class="fold-card" id="shopCreateFold">
-                <summary class="fold-card-summary">新增商品</summary>
-                <div class="fold-card-body">
-                  <div class="grid">
-                    <div class="span-4">
-                      <label for="shopNewSourceProductId">魔方商品</label>
-                      <select id="shopNewSourceProductId"></select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewTitle">展示标题</label>
-                      <input id="shopNewTitle" placeholder="留空则默认使用上面选中的魔方商品名">
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPointsCost">所需积分</label>
-                      <input id="shopNewPointsCost" placeholder="例如 200">
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewRedeemCycle">兑换周期</label>
-                      <select id="shopNewRedeemCycle">
-                        <option value="none">不限</option>
-                        <option value="month">月度</option>
-                        <option value="quarter">季度</option>
-                        <option value="year">年度</option>
-                      </select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewRepeatMarkupPercent">周期内重复加价%</label>
-                      <input id="shopNewRepeatMarkupPercent" placeholder="如 200 表示总价变为 300%">
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewStock">库存上限</label>
-                      <input id="shopNewStock" placeholder="0 表示不限量">
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewSortOrder">排序</label>
-                      <input id="shopNewSortOrder" placeholder="0">
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewEnabled">状态</label>
-                      <select id="shopNewEnabled">
-                        <option value="1">启用</option>
-                        <option value="0">停用</option>
-                      </select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoScene">优惠码场景</label>
-                      <select id="shopNewPromoScene">
-                        <option value="purchase">新开</option>
-                        <option value="renew">续期</option>
-                      </select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoType">优惠类型</label>
-                      <select id="shopNewPromoType">
-                        <option value="percent">百分比</option>
-                        <option value="fixed">固定金额</option>
-                        <option value="override">覆盖价格</option>
-                        <option value="free">免费/免安装</option>
-                      </select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoValue">优惠值</label>
-                      <input id="shopNewPromoValue" placeholder="percent 填 80 / fixed 填金额">
-                    </div>
-                    <div class="span-12">
-                      <label for="shopNewDescription">商品描述</label>
-                      <input id="shopNewDescription" placeholder="展示给 TG 用户看的说明">
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoStartTime">优惠开始时间</label>
-                      <input id="shopNewPromoStartTime" type="date">
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoExpirationTime">优惠结束时间</label>
-                      <input id="shopNewPromoExpirationTime" type="date">
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoValidityMode">快捷有效期</label>
-                      <select id="shopNewPromoValidityMode">
-                        <option value="default">默认</option>
-                        <option value="1d">1天</option>
-                        <option value="1w">1周</option>
-                        <option value="1m">1个月</option>
-                        <option value="1q">1季度</option>
-                        <option value="6m">半年</option>
-                        <option value="1y">1年</option>
-                      </select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoRecurring">循环优惠</label>
-                      <select id="shopNewPromoRecurring">
-                        <option value="0">否</option>
-                        <option value="1">是</option>
-                      </select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoRecurfor">循环次数</label>
-                      <input id="shopNewPromoRecurfor" placeholder="0 表示不限/不使用">
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoMaxTimes">优惠码最大使用次数</label>
-                      <input id="shopNewPromoMaxTimes" value="1" placeholder="默认 1">
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoRequiresExist">要求用户已持有指定产品</label>
-                      <select id="shopNewPromoRequiresExist">
-                        <option value="0">否</option>
-                        <option value="1">是</option>
-                      </select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoLifelong">终身优惠</label>
-                      <select id="shopNewPromoLifelong">
-                        <option value="0">否</option>
-                        <option value="1">是</option>
-                      </select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoOneTime">一次性优惠</label>
-                      <select id="shopNewPromoOneTime">
-                        <option value="1">是</option>
-                        <option value="0">否</option>
-                      </select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoOnlyNewClient">仅限新用户</label>
-                      <select id="shopNewPromoOnlyNewClient">
-                        <option value="0">否</option>
-                        <option value="1">是</option>
-                      </select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoOnlyOldClient">仅限老用户</label>
-                      <select id="shopNewPromoOnlyOldClient">
-                        <option value="0">否</option>
-                        <option value="1">是</option>
-                      </select>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoOncePerClient">每用户限兑 1 次</label>
-                      <select id="shopNewPromoOncePerClient">
-                        <option value="1">是</option>
-                        <option value="0">否</option>
-                      </select>
-                    </div>
-                    <div class="span-12 small muted">提示：如果你想做“每季度原价 1 次，周期内再次兑换加价”，请把“每用户限兑 1 次”设为“否”，再设置兑换周期和加价比例。
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoCycles">适用周期</label>
-                      <div id="shopNewPromoCyclesDropdown"></div>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoAppliesTo">适用产品</label>
-                      <div id="shopNewPromoAppliesToDropdown"></div>
-                    </div>
-                    <div class="span-4">
-                      <label for="shopNewPromoRequires">前置产品</label>
-                      <div id="shopNewPromoRequiresDropdown"></div>
-                    </div>
-                    <div class="span-12">
-                      <label for="shopNewPromoNotes">魔方备注</label>
-                      <textarea id="shopNewPromoNotes" placeholder="例如：TG 群积分商城兑换商品"></textarea>
-                    </div>
+                <div class="card" style="margin-top: 18px; padding: 18px;">
+                  <div class="shop-list-head">
+                    <h3>已配置接口</h3>
                   </div>
-                  <div class="row" style="justify-content: flex-end;">
-                    <button id="shopCreateBtn" type="button">新增商品</button>
-                  </div>
+                  <div id="shopConfigsList" class="list" style="margin-top: 14px;"></div>
                 </div>
-              </details>
-
-              <div class="card" style="margin-top: 18px; padding: 18px;">
-                <div class="shop-list-head">
-                  <h3>已配置商品</h3>
-                  <div id="shopItemsSceneTabs" class="shop-scene-tabs">
-                    <button id="shopScenePurchaseTab" class="shop-scene-tab" data-shop-scene="purchase" type="button">新开 <span id="shopScenePurchaseCount" class="shop-scene-tab-count">0</span></button>
-                    <button id="shopSceneRenewTab" class="shop-scene-tab" data-shop-scene="renew" type="button">续期 <span id="shopSceneRenewCount" class="shop-scene-tab-count">0</span></button>
-                  </div>
-                </div>
-                <div id="shopItemsList" class="list" style="margin-top: 14px;"></div>
               </div>
+
+              <div id="shopDetailPanel" class="hidden"></div>
             </div>
           </div>
 
@@ -5985,8 +5820,12 @@
       shopSelectedChatId: 0,
       shopSceneFilter: '',
       shopExpandedItemIds: [],
-      shopCatalogChatId: 0,
-      zjmfCatalog: null,
+      shopExpandedConfigIds: [],
+      shopNewItemFoldOpenIds: [],
+      shopEditingConfigId: 0,
+      shopCatalogConfigIds: [],
+      shopDetailConfigId: 0,
+      zjmfCatalogs: {},
       aiTestMessages: [],
       aiTestRunning: false,
       keepAliveTimer: null,
@@ -6425,22 +6264,99 @@
       return (state.me?.chats || []).find((chat) => Number(chat.chat_id || 0) === chatId) || null;
     }
 
-    function getZjmfProductOptions() {
-      return Array.isArray(state.zjmfCatalog?.products)
-        ? state.zjmfCatalog.products.map((item) => ({ value: String(item.id), label: `${item.name} (#${item.id})` }))
+    function getShopConfigsForChat(chat) {
+      return Array.isArray(chat?.pointsMallConfigs) ? chat.pointsMallConfigs : [];
+    }
+
+    function getShopItemsForChat(chat) {
+      return Array.isArray(chat?.pointsMallItems) ? chat.pointsMallItems : [];
+    }
+
+    function getShopConfigById(configId) {
+      const id = Number(configId || 0);
+      if (!id) return null;
+      for (const chat of (state.me?.chats || [])) {
+        const cfg = (chat.pointsMallConfigs || []).find((c) => Number(c.id || 0) === id);
+        if (cfg) return cfg;
+      }
+      return null;
+    }
+
+    function getAllShopConfigs() {
+      const out = [];
+      for (const chat of (state.me?.chats || [])) {
+        for (const cfg of (chat.pointsMallConfigs || [])) out.push(cfg);
+      }
+      return out;
+    }
+
+    function getAllShopItems() {
+      const out = [];
+      for (const chat of (state.me?.chats || [])) {
+        for (const item of (chat.pointsMallItems || [])) out.push(item);
+      }
+      return out;
+    }
+
+    function getChatForShopConfig(configId) {
+      const id = Number(configId || 0);
+      if (!id) return null;
+      for (const chat of (state.me?.chats || [])) {
+        if ((chat.pointsMallConfigs || []).some((c) => Number(c.id || 0) === id)) return chat;
+      }
+      return null;
+    }
+
+    function getChatForShopItem(itemId) {
+      const id = Number(itemId || 0);
+      if (!id) return null;
+      for (const chat of (state.me?.chats || [])) {
+        if ((chat.pointsMallItems || []).some((item) => Number(item.id || 0) === id)) return chat;
+      }
+      return null;
+    }
+
+    function getCatalogForConfig(configId) {
+      const id = Number(configId || 0);
+      if (!id) return null;
+      return (state.zjmfCatalogs && state.zjmfCatalogs[id]) || null;
+    }
+
+    function getZjmfProductOptions(configId) {
+      const catalog = getCatalogForConfig(configId);
+      return Array.isArray(catalog?.products)
+        ? catalog.products.map((item) => ({ value: String(item.id), label: `${item.name} (#${item.id})` }))
         : [];
     }
 
-    function getZjmfProductLabelById(productId) {
-      const target = (state.zjmfCatalog?.products || []).find((item) => Number(item.id || 0) === Number(productId || 0));
+    function getZjmfProductLabelById(configId, productId) {
+      const catalog = getCatalogForConfig(configId);
+      const target = (catalog?.products || []).find((item) => Number(item.id || 0) === Number(productId || 0));
       return target ? String(target.name || '').trim() : '';
     }
 
-    function getZjmfCycleOptions() {
-      const cycles = state.zjmfCatalog?.cycles && typeof state.zjmfCatalog.cycles === 'object' ? state.zjmfCatalog.cycles : {};
+    function getZjmfCycleOptions(configId) {
+      const catalog = getCatalogForConfig(configId);
+      const cycles = catalog?.cycles && typeof catalog.cycles === 'object' ? catalog.cycles : {};
       return Object.entries(cycles)
         .filter(([value, label]) => /^[a-z0-9_]+$/i.test(String(value || '')) && typeof label === 'string' && String(label).trim())
         .map(([value, label]) => ({ value, label }));
+    }
+
+    function getShopConfigShortLabel(cfg) {
+      if (!cfg) return '';
+      const name = String(cfg.name || '').trim();
+      if (name) return name;
+      const url = String(cfg.custom_api_url || '').trim();
+      if (url) {
+        try {
+          const u = new URL(url);
+          return u.host;
+        } catch {
+          return url.slice(0, 24);
+        }
+      }
+      return `接口 #${cfg.id || ''}`;
     }
 
     function formatMultiDropdownSummary(options, selectedValues, placeholder = '请选择') {
@@ -6500,54 +6416,75 @@
       else if (expanded) state.shopExpandedItemIds = current;
     }
 
-    function getPreferredInterfaceNotice(config, integration) {
-      if (String(config?.provider || '') === 'off') {
-        return '当前已关闭积分商城接口，TG 用户将无法兑换商品。';
-      }
-      if (String(config?.provider || '') === 'zjmf') {
-        if (config?.custom_api_url) {
-          return `当前使用群组自定义魔方接口：${config.custom_api_url}`;
-        }
-        return integration?.message || '请先配置接口地址和密令';
-      }
-      return '当前接口暂未支持。';
+    function isShopConfigExpanded(configId) {
+      return Array.isArray(state.shopExpandedConfigIds) && state.shopExpandedConfigIds.includes(Number(configId || 0));
     }
 
-    async function loadZjmfCatalog(force = false) {
-      const chatId = Number(state.shopSelectedChatId || 0);
-      if (!chatId) {
-        state.zjmfCatalog = null;
-        state.shopCatalogChatId = 0;
-        return;
-      }
+    function setShopConfigExpanded(configId, expanded) {
+      const safeId = Number(configId || 0);
+      if (!safeId) return;
+      const current = Array.isArray(state.shopExpandedConfigIds) ? state.shopExpandedConfigIds.slice() : [];
+      const has = current.includes(safeId);
+      if (expanded && !has) current.push(safeId);
+      if (!expanded && has) state.shopExpandedConfigIds = current.filter((id) => id !== safeId);
+      else if (expanded) state.shopExpandedConfigIds = current;
+    }
+
+    function getShopConfigStatusLabel(cfg) {
+      if (!cfg) return '未配置';
+      if (String(cfg.provider || '') === 'off') return '已关闭';
+      const catalog = getCatalogForConfig(cfg.id);
+      if (catalog && catalog.fetchOk === true && catalog.configured === true) return '已连接';
+      if (catalog && catalog.fetchOk === false) return '未连接';
+      return '未加载';
+    }
+
+    function getShopProviderLabel(cfg) {
+      const provider = String(cfg?.provider || '').trim();
+      if (!provider || provider === 'off') return '已关闭';
+      if (provider === 'zjmf') return '魔方财务';
+      return provider;
+    }
+
+    async function loadInterfaceCatalog(configId, force = false) {
+      const id = Number(configId || 0);
+      if (!id) return;
       try {
-        const path = `${force ? '/api/points-mall/catalog?refresh=1' : '/api/points-mall/catalog'}${force ? '&' : '?'}chatId=${chatId}`;
+        const path = `/api/points-mall/catalog?configId=${id}${force ? '&refresh=1' : ''}`;
         const data = await request(path, { method: 'GET', headers: {} });
-        state.zjmfCatalog = data.catalog ? { ...data.catalog, fetchOk: data.ok !== false, fetchError: data.error || '' } : null;
-        state.shopCatalogChatId = chatId;
-        if (state.me) renderPointsMall(state.me);
-        if (data.ok === false && data.error) {
-          setStatus(data.error);
-        }
+        if (!state.zjmfCatalogs || typeof state.zjmfCatalogs !== 'object') state.zjmfCatalogs = {};
+        state.zjmfCatalogs[id] = data.catalog
+          ? { ...data.catalog, fetchOk: data.ok !== false, fetchError: data.error || '' }
+          : null;
+        if (!state.shopCatalogConfigIds.includes(id)) state.shopCatalogConfigIds.push(id);
+        if (data.ok === false && data.error) setStatus(data.error);
       } catch (error) {
-        state.zjmfCatalog = { configured: false, endpoint: '', products: [], cycles: {}, promoTypes: [], fetchOk: false, fetchError: error.message || '加载魔方目录失败' };
-        state.shopCatalogChatId = chatId;
-        if (state.me) renderPointsMall(state.me);
-        setStatus(error.message || '加载魔方目录失败');
+        if (!state.zjmfCatalogs || typeof state.zjmfCatalogs !== 'object') state.zjmfCatalogs = {};
+        state.zjmfCatalogs[id] = { configured: false, endpoint: '', products: [], cycles: {}, promoTypes: [], fetchOk: false, fetchError: error.message || '加载接口目录失败' };
+        if (!state.shopCatalogConfigIds.includes(id)) state.shopCatalogConfigIds.push(id);
+        setStatus(error.message || '加载接口目录失败');
       }
     }
 
-    function buildShopItemPayload(prefix, itemId = 0) {
+    async function loadAllInterfaceCatalogs(force = false) {
+      const configs = getAllShopConfigs().filter((cfg) => String(cfg.provider || '') !== 'off' && String(cfg.custom_api_url || '').trim() && String(cfg.custom_api_token || '').trim());
+      if (!configs.length) return;
+      await Promise.all(configs.map((cfg) => loadInterfaceCatalog(cfg.id, force)));
+      if (state.me) renderPointsMall(state.me);
+    }
+
+    function buildShopItemPayload(prefix, itemId = 0, configId = 0) {
       const getValue = (suffix) => {
         const el = document.getElementById(`${prefix}${suffix}`);
         return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement || el instanceof HTMLSelectElement ? el.value.trim() : '';
       };
       const toBool = (suffix, defaultValue = false) => getValue(suffix) ? getValue(suffix) === '1' : defaultValue;
       const sourceProductId = Number(getValue('SourceProductId') || 0);
-      const title = getValue('Title') || getZjmfProductLabelById(sourceProductId) || '';
+      const title = getValue('Title') || getZjmfProductLabelById(configId, sourceProductId) || '';
       const promoAppliesTo = getSelectedValues(`${prefix}PromoAppliesTo`).map((value) => Number(value)).filter((value) => value > 0);
       return {
         id: itemId,
+        configId: Number(configId || 0),
         sourceProductId,
         title,
         description: getValue('Description'),
@@ -6579,6 +6516,178 @@
       };
     }
 
+    function renderShopItemEditForm(item, configId, locked) {
+      const productOptions = getZjmfProductOptions(configId);
+      const cycleOptions = getZjmfCycleOptions(configId);
+      const sourceProductOptions = [{ value: '', label: '请选择魔方商品' }, ...productOptions];
+      const prefix = `shopItem_${item.id}_`;
+      return `
+          <div class="grid">
+            <div class="span-4"><label for="${prefix}SourceProductId">魔方商品</label><select id="${prefix}SourceProductId" ${locked ? 'disabled' : ''}>${sourceProductOptions.map((option) => `<option value="${escapeHtml(String(option.value))}" ${String(option.value) === String(item.source_product_id || '') ? 'selected' : ''}>${escapeHtml(String(option.label))}</option>`).join('')}</select></div>
+            <div class="span-4"><label for="${prefix}Title">展示标题</label><input id="${prefix}Title" value="${escapeHtml(item.title || '')}" placeholder="留空则默认使用上面选中的魔方商品名" ${locked ? 'disabled' : ''}></div>
+            <div class="span-4"><label for="${prefix}PointsCost">积分</label><input id="${prefix}PointsCost" value="${escapeHtml(String(item.points_cost || 0))}" ${locked ? 'disabled' : ''}></div>
+            <div class="span-4"><label for="${prefix}RedeemCycle">兑换周期</label><select id="${prefix}RedeemCycle" ${locked ? 'disabled' : ''}><option value="none" ${item.redeem_cycle === 'none' ? 'selected' : ''}>不限</option><option value="month" ${item.redeem_cycle === 'month' ? 'selected' : ''}>月度</option><option value="quarter" ${item.redeem_cycle === 'quarter' ? 'selected' : ''}>季度</option><option value="year" ${item.redeem_cycle === 'year' ? 'selected' : ''}>年度</option></select></div>
+            <div class="span-4"><label for="${prefix}RepeatMarkupPercent">周期内重复加价%</label><input id="${prefix}RepeatMarkupPercent" value="${escapeHtml(String(item.repeat_markup_percent || 0))}" placeholder="如 200 表示总价变为 300%" ${locked ? 'disabled' : ''}></div>
+            <div class="span-4"><label for="${prefix}Stock">库存</label><input id="${prefix}Stock" value="${escapeHtml(String(item.stock || 0))}" ${locked ? 'disabled' : ''}></div>
+            <div class="span-4"><label for="${prefix}SortOrder">排序</label><input id="${prefix}SortOrder" value="${escapeHtml(String(item.sort_order || 0))}" ${locked ? 'disabled' : ''}></div>
+            <div class="span-4"><label for="${prefix}Enabled">状态</label><select id="${prefix}Enabled" ${locked ? 'disabled' : ''}><option value="1" ${item.enabled ? 'selected' : ''}>启用</option><option value="0" ${item.enabled ? '' : 'selected'}>停用</option></select></div>
+            <div class="span-4"><label for="${prefix}PromoScene">优惠码场景</label><select id="${prefix}PromoScene" ${locked ? 'disabled' : ''}><option value="purchase" ${item.promo_scene === 'purchase' ? 'selected' : ''}>新开</option><option value="renew" ${item.promo_scene === 'renew' ? 'selected' : ''}>续期</option></select></div>
+            <div class="span-4"><label for="${prefix}PromoType">优惠类型</label><select id="${prefix}PromoType" ${locked ? 'disabled' : ''}><option value="percent" ${item.promo_type === 'percent' ? 'selected' : ''}>百分比</option><option value="fixed" ${item.promo_type === 'fixed' ? 'selected' : ''}>固定金额</option><option value="override" ${item.promo_type === 'override' ? 'selected' : ''}>覆盖价格</option><option value="free" ${item.promo_type === 'free' ? 'selected' : ''}>免费/免安装</option></select></div>
+            <div class="span-4"><label for="${prefix}PromoValue">优惠值</label><input id="${prefix}PromoValue" value="${escapeHtml(String(item.promo_value || 0))}" ${locked ? 'disabled' : ''}></div>
+            <div class="span-12"><label for="${prefix}Description">描述</label><input id="${prefix}Description" value="${escapeHtml(item.description || '')}" ${locked ? 'disabled' : ''}></div>
+            <div class="span-4"><label for="${prefix}PromoStartTime">开始时间</label><input id="${prefix}PromoStartTime" type="date" value="${escapeHtml(formatDateInput(item.promo_start_time || ''))}" ${locked ? 'disabled' : ''}></div>
+            <div class="span-4"><label for="${prefix}PromoExpirationTime">结束时间</label><input id="${prefix}PromoExpirationTime" type="date" value="${escapeHtml(formatDateInput(item.promo_expiration_time || ''))}" ${locked ? 'disabled' : ''}></div>
+            <div class="span-4"><label for="${prefix}PromoValidityMode">快捷有效期</label><select id="${prefix}PromoValidityMode" ${locked ? 'disabled' : ''}><option value="default" ${item.promo_validity_mode === 'default' ? 'selected' : ''}>默认</option><option value="1d" ${item.promo_validity_mode === '1d' ? 'selected' : ''}>1天</option><option value="1w" ${item.promo_validity_mode === '1w' ? 'selected' : ''}>1周</option><option value="1m" ${item.promo_validity_mode === '1m' ? 'selected' : ''}>1个月</option><option value="1q" ${item.promo_validity_mode === '1q' ? 'selected' : ''}>1季度</option><option value="6m" ${item.promo_validity_mode === '6m' ? 'selected' : ''}>半年</option><option value="1y" ${item.promo_validity_mode === '1y' ? 'selected' : ''}>1年</option></select></div>
+            <div class="span-4"><label for="${prefix}PromoRecurring">循环优惠</label><select id="${prefix}PromoRecurring" ${locked ? 'disabled' : ''}><option value="0" ${item.promo_recurring ? '' : 'selected'}>否</option><option value="1" ${item.promo_recurring ? 'selected' : ''}>是</option></select></div>
+            <div class="span-4"><label for="${prefix}PromoRecurfor">循环次数</label><input id="${prefix}PromoRecurfor" value="${escapeHtml(String(item.promo_recurfor || 0))}" ${locked ? 'disabled' : ''}></div>
+            <div class="span-4"><label for="${prefix}PromoMaxTimes">优惠码次数</label><input id="${prefix}PromoMaxTimes" value="${escapeHtml(String(item.promo_max_times || 0))}" ${locked ? 'disabled' : ''}></div>
+            <div class="span-4"><label for="${prefix}PromoRequiresExist">需已有产品</label><select id="${prefix}PromoRequiresExist" ${locked ? 'disabled' : ''}><option value="0" ${item.promo_requires_exist ? '' : 'selected'}>否</option><option value="1" ${item.promo_requires_exist ? 'selected' : ''}>是</option></select></div>
+            <div class="span-4"><label for="${prefix}PromoLifelong">终身优惠</label><select id="${prefix}PromoLifelong" ${locked ? 'disabled' : ''}><option value="0" ${item.promo_lifelong ? '' : 'selected'}>否</option><option value="1" ${item.promo_lifelong ? 'selected' : ''}>是</option></select></div>
+            <div class="span-4"><label for="${prefix}PromoOneTime">一次性优惠</label><select id="${prefix}PromoOneTime" ${locked ? 'disabled' : ''}><option value="1" ${item.promo_one_time ? 'selected' : ''}>是</option><option value="0" ${item.promo_one_time ? '' : 'selected'}>否</option></select></div>
+            <div class="span-4"><label for="${prefix}PromoOnlyNewClient">仅新用户</label><select id="${prefix}PromoOnlyNewClient" ${locked ? 'disabled' : ''}><option value="0" ${item.promo_only_new_client ? '' : 'selected'}>否</option><option value="1" ${item.promo_only_new_client ? 'selected' : ''}>是</option></select></div>
+            <div class="span-4"><label for="${prefix}PromoOnlyOldClient">仅老用户</label><select id="${prefix}PromoOnlyOldClient" ${locked ? 'disabled' : ''}><option value="0" ${item.promo_only_old_client ? '' : 'selected'}>否</option><option value="1" ${item.promo_only_old_client ? 'selected' : ''}>是</option></select></div>
+            <div class="span-4"><label for="${prefix}PromoOncePerClient">每人限兑一次</label><select id="${prefix}PromoOncePerClient" ${locked ? 'disabled' : ''}><option value="1" ${item.promo_once_per_client ? 'selected' : ''}>是</option><option value="0" ${item.promo_once_per_client ? '' : 'selected'}>否</option></select></div>
+            <div class="span-4"><label for="${prefix}PromoCycles">适用周期</label>${renderMultiSelectDropdown(`${prefix}PromoCycles`, cycleOptions, Array.isArray(item.promo_cycles) ? item.promo_cycles : [], '请选择适用周期', locked)}</div>
+            <div class="span-4"><label for="${prefix}PromoAppliesTo">适用产品</label>${renderMultiSelectDropdown(`${prefix}PromoAppliesTo`, productOptions, Array.isArray(item.promo_appliesto) ? item.promo_appliesto.map(String) : [], '请选择适用产品', locked)}</div>
+            <div class="span-4"><label for="${prefix}PromoRequires">前置产品</label>${renderMultiSelectDropdown(`${prefix}PromoRequires`, productOptions, Array.isArray(item.promo_requires) ? item.promo_requires.map(String) : [], '请选择前置产品', locked)}</div>
+            <div class="span-12"><label for="${prefix}PromoNotes">备注</label><textarea id="${prefix}PromoNotes" ${locked ? 'disabled' : ''}>${escapeHtml(item.promo_notes || '')}</textarea></div>
+          </div>
+          <div class="row" style="justify-content: flex-end;">
+            <button class="saveShopItemBtn" data-item-id="${item.id}" data-config-id="${configId}" type="button" ${locked ? 'disabled' : ''}>保存商品</button>
+          </div>`;
+    }
+
+    function renderShopItemCard(item, configId, locked) {
+      const expanded = isShopItemExpanded(item.id);
+      return `
+        <div class="shop-item-card ${expanded ? 'expanded' : ''}">
+          <div class="shop-item-head">
+            <div class="shop-item-main">
+              <div class="shop-item-title">
+                <span>${escapeHtml(item.title || '未命名商品')}</span>
+                <span class="shop-item-scene-tag">${escapeHtml(getShopSceneLabel(item.promo_scene))}</span>
+              </div>
+              <div class="shop-item-summary">${escapeHtml(formatShopItemSummary(item))}</div>
+            </div>
+            <div class="shop-item-actions">
+              <span class="shop-item-status ${item.enabled ? 'ok' : 'off'}">${item.enabled ? '上架中' : '已下架'}</span>
+              <button class="toggleShopItemBtn shop-item-action-btn secondary" data-item-id="${item.id}" data-config-id="${configId}" type="button" ${locked ? 'disabled' : ''}>${expanded ? '收起' : '编辑'}</button>
+              <button class="deleteShopItemBtn shop-item-action-btn secondary" data-item-id="${item.id}" data-config-id="${configId}" type="button" ${locked ? 'disabled' : ''}>删除</button>
+            </div>
+          </div>
+          ${expanded ? renderShopItemEditForm(item, configId, locked) : ''}
+        </div>`;
+    }
+
+    function renderShopNewItemForm(configId, locked) {
+      const productOptions = getZjmfProductOptions(configId);
+      const cycleOptions = getZjmfCycleOptions(configId);
+      const sourceProductOptions = [{ value: '', label: '请选择魔方商品' }, ...productOptions];
+      const prefix = `shopCfg_${configId}_New`;
+      const sourceProductsHtml = sourceProductOptions.map((option) => `<option value="${escapeHtml(String(option.value))}">${escapeHtml(String(option.label))}</option>`).join('');
+      const open = Array.isArray(state.shopNewItemFoldOpenIds) && state.shopNewItemFoldOpenIds.includes(Number(configId || 0));
+      return `
+        <details class="fold-card shopNewItemFold" data-config-id="${configId}" ${open ? 'open' : ''}>
+          <summary class="fold-card-summary">新增商品</summary>
+          <div class="fold-card-body">
+            <div class="grid">
+              <div class="span-4"><label for="${prefix}SourceProductId">魔方商品</label><select id="${prefix}SourceProductId" ${locked ? 'disabled' : ''}>${sourceProductsHtml}</select></div>
+              <div class="span-4"><label for="${prefix}Title">展示标题</label><input id="${prefix}Title" placeholder="留空则默认使用上面选中的魔方商品名" ${locked ? 'disabled' : ''}></div>
+              <div class="span-4"><label for="${prefix}PointsCost">所需积分</label><input id="${prefix}PointsCost" placeholder="例如 200" ${locked ? 'disabled' : ''}></div>
+              <div class="span-4"><label for="${prefix}RedeemCycle">兑换周期</label><select id="${prefix}RedeemCycle" ${locked ? 'disabled' : ''}><option value="none">不限</option><option value="month">月度</option><option value="quarter">季度</option><option value="year">年度</option></select></div>
+              <div class="span-4"><label for="${prefix}RepeatMarkupPercent">周期内重复加价%</label><input id="${prefix}RepeatMarkupPercent" placeholder="如 200 表示总价变为 300%" ${locked ? 'disabled' : ''}></div>
+              <div class="span-4"><label for="${prefix}Stock">库存上限</label><input id="${prefix}Stock" placeholder="0 表示不限量" ${locked ? 'disabled' : ''}></div>
+              <div class="span-4"><label for="${prefix}SortOrder">排序</label><input id="${prefix}SortOrder" placeholder="0" ${locked ? 'disabled' : ''}></div>
+              <div class="span-4"><label for="${prefix}Enabled">状态</label><select id="${prefix}Enabled" ${locked ? 'disabled' : ''}><option value="1">启用</option><option value="0">停用</option></select></div>
+              <div class="span-4"><label for="${prefix}PromoScene">优惠码场景</label><select id="${prefix}PromoScene" ${locked ? 'disabled' : ''}><option value="purchase">新开</option><option value="renew">续期</option></select></div>
+              <div class="span-4"><label for="${prefix}PromoType">优惠类型</label><select id="${prefix}PromoType" ${locked ? 'disabled' : ''}><option value="percent">百分比</option><option value="fixed">固定金额</option><option value="override">覆盖价格</option><option value="free">免费/免安装</option></select></div>
+              <div class="span-4"><label for="${prefix}PromoValue">优惠值</label><input id="${prefix}PromoValue" placeholder="percent 填 80 / fixed 填金额" ${locked ? 'disabled' : ''}></div>
+              <div class="span-12"><label for="${prefix}Description">商品描述</label><input id="${prefix}Description" placeholder="展示给 TG 用户看的说明" ${locked ? 'disabled' : ''}></div>
+              <div class="span-4"><label for="${prefix}PromoStartTime">优惠开始时间</label><input id="${prefix}PromoStartTime" type="date" ${locked ? 'disabled' : ''}></div>
+              <div class="span-4"><label for="${prefix}PromoExpirationTime">优惠结束时间</label><input id="${prefix}PromoExpirationTime" type="date" ${locked ? 'disabled' : ''}></div>
+              <div class="span-4"><label for="${prefix}PromoValidityMode">快捷有效期</label><select id="${prefix}PromoValidityMode" ${locked ? 'disabled' : ''}><option value="default">默认</option><option value="1d">1天</option><option value="1w">1周</option><option value="1m">1个月</option><option value="1q">1季度</option><option value="6m">半年</option><option value="1y">1年</option></select></div>
+              <div class="span-4"><label for="${prefix}PromoRecurring">循环优惠</label><select id="${prefix}PromoRecurring" ${locked ? 'disabled' : ''}><option value="0">否</option><option value="1">是</option></select></div>
+              <div class="span-4"><label for="${prefix}PromoRecurfor">循环次数</label><input id="${prefix}PromoRecurfor" placeholder="0 表示不限/不使用" ${locked ? 'disabled' : ''}></div>
+              <div class="span-4"><label for="${prefix}PromoMaxTimes">优惠码最大使用次数</label><input id="${prefix}PromoMaxTimes" value="1" placeholder="默认 1" ${locked ? 'disabled' : ''}></div>
+              <div class="span-4"><label for="${prefix}PromoRequiresExist">要求用户已持有指定产品</label><select id="${prefix}PromoRequiresExist" ${locked ? 'disabled' : ''}><option value="0">否</option><option value="1">是</option></select></div>
+              <div class="span-4"><label for="${prefix}PromoLifelong">终身优惠</label><select id="${prefix}PromoLifelong" ${locked ? 'disabled' : ''}><option value="0">否</option><option value="1">是</option></select></div>
+              <div class="span-4"><label for="${prefix}PromoOneTime">一次性优惠</label><select id="${prefix}PromoOneTime" ${locked ? 'disabled' : ''}><option value="1">是</option><option value="0">否</option></select></div>
+              <div class="span-4"><label for="${prefix}PromoOnlyNewClient">仅限新用户</label><select id="${prefix}PromoOnlyNewClient" ${locked ? 'disabled' : ''}><option value="0">否</option><option value="1">是</option></select></div>
+              <div class="span-4"><label for="${prefix}PromoOnlyOldClient">仅限老用户</label><select id="${prefix}PromoOnlyOldClient" ${locked ? 'disabled' : ''}><option value="0">否</option><option value="1">是</option></select></div>
+              <div class="span-4"><label for="${prefix}PromoOncePerClient">每用户限兑 1 次</label><select id="${prefix}PromoOncePerClient" ${locked ? 'disabled' : ''}><option value="1">是</option><option value="0">否</option></select></div>
+              <div class="span-12 small muted">提示：如果你想做“每季度原价 1 次，周期内再次兑换加价”，请把“每用户限兑 1 次”设为“否”，再设置兑换周期和加价比例。</div>
+              <div class="span-4"><label for="${prefix}PromoCycles">适用周期</label>${renderMultiSelectDropdown(`${prefix}PromoCycles`, cycleOptions, [], '请选择适用周期', locked)}</div>
+              <div class="span-4"><label for="${prefix}PromoAppliesTo">适用产品</label>${renderMultiSelectDropdown(`${prefix}PromoAppliesTo`, productOptions, [], '请选择适用产品', locked)}</div>
+              <div class="span-4"><label for="${prefix}PromoRequires">前置产品</label>${renderMultiSelectDropdown(`${prefix}PromoRequires`, productOptions, [], '请选择前置产品', locked)}</div>
+              <div class="span-12"><label for="${prefix}PromoNotes">魔方备注</label><textarea id="${prefix}PromoNotes" placeholder="例如：TG 群积分商城兑换商品" ${locked ? 'disabled' : ''}></textarea></div>
+            </div>
+            <div class="row" style="justify-content: flex-end;">
+              <button class="shopCreateBtn" data-config-id="${configId}" type="button" ${locked ? 'disabled' : ''}>新增商品</button>
+            </div>
+          </div>
+        </details>`;
+    }
+
+    function renderShopConfigItemsPanel(cfg, allItems, locked) {
+      const configItems = allItems.filter((item) => Number(item.config_id || 0) === Number(cfg.id || 0));
+      const purchaseItems = configItems.filter((item) => String(item?.promo_scene || 'purchase') !== 'renew');
+      const renewItems = configItems.filter((item) => String(item?.promo_scene || '') === 'renew');
+      const activeScene = state.shopSceneFilter === 'renew'
+        ? 'renew'
+        : (state.shopSceneFilter === 'purchase' ? 'purchase' : (purchaseItems.length ? 'purchase' : 'renew'));
+      const shownItems = activeScene === 'renew' ? renewItems : purchaseItems;
+      const purchaseEnabledCount = purchaseItems.filter((item) => Number(item?.enabled || 0) !== 0).length;
+      const renewEnabledCount = renewItems.filter((item) => Number(item?.enabled || 0) !== 0).length;
+      return `
+        <div class="shop-config-items-panel">
+          ${renderShopNewItemForm(cfg.id, locked)}
+          <div class="card" style="margin-top: 18px; padding: 18px;">
+            <div class="shop-list-head">
+              <h3>已配置商品</h3>
+              <div class="shop-scene-tabs">
+                <button class="shop-scene-tab ${activeScene === 'purchase' ? 'active' : ''}" data-shop-scene="purchase" type="button">新开 <span class="shop-scene-tab-count">${purchaseEnabledCount}</span></button>
+                <button class="shop-scene-tab ${activeScene === 'renew' ? 'active' : ''}" data-shop-scene="renew" type="button">续期 <span class="shop-scene-tab-count">${renewEnabledCount}</span></button>
+              </div>
+            </div>
+            <div class="list" style="margin-top: 14px;">
+              ${shownItems.length ? shownItems.map((item) => `<div class="item">${renderShopItemCard(item, cfg.id, locked)}</div>`).join('') : '<div class="item muted small">该接口暂无商品</div>'}
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function renderShopConfigCard(cfg, allItems, currentChat, locked) {
+      const status = getShopConfigStatusLabel(cfg);
+      const itemsForCfg = allItems.filter((item) => Number(item.config_id || 0) === Number(cfg.id || 0));
+      const enabledCount = itemsForCfg.filter((item) => Number(item?.enabled || 0) !== 0).length;
+      const purchaseCount = itemsForCfg.filter((item) => Number(item?.enabled || 0) !== 0 && String(item?.promo_scene || 'purchase') !== 'renew').length;
+      const renewCount = itemsForCfg.filter((item) => Number(item?.enabled || 0) !== 0 && String(item?.promo_scene || '') === 'renew').length;
+      const groupName = String(currentChat?.title || currentChat?.chat_id || '').trim();
+      const cfgLabel = getShopConfigShortLabel(cfg);
+      const title = groupName ? `${groupName}-${cfgLabel}` : cfgLabel;
+      const summary = `商品 <code>${enabledCount}</code>（新开 ${purchaseCount} / 续期 ${renewCount}） - ${escapeHtml(getShopProviderLabel(cfg))}`;
+      const statusClass = status === '已连接' ? 'ok' : (status === '已关闭' ? 'off' : 'warn');
+      const editingHint = Number(state.shopEditingConfigId || 0) === Number(cfg.id || 0) ? '<span class="shop-item-scene-tag">编辑中</span>' : '';
+      return `
+        <div class="shop-item-card">
+          <div class="shop-item-head">
+            <div class="shop-item-main">
+              <div class="shop-item-title">
+                <span>${escapeHtml(title)}</span>
+                ${editingHint}
+              </div>
+              <div class="shop-item-summary">${summary}</div>
+            </div>
+            <div class="shop-item-actions">
+              <span class="shop-item-status ${statusClass}">${escapeHtml(status)}</span>
+              <button class="editShopConfigBtn shop-item-action-btn secondary" data-config-id="${cfg.id}" type="button" ${locked ? 'disabled' : ''}>编辑</button>
+              <button class="openShopConfigBtn shop-item-action-btn secondary" data-config-id="${cfg.id}" type="button" ${locked ? 'disabled' : ''}>设置</button>
+              <button class="deleteShopConfigBtn shop-item-action-btn secondary" data-config-id="${cfg.id}" type="button" ${locked ? 'disabled' : ''}>删除</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
     function renderPointsMall(data) {
       const chats = Array.isArray(data?.chats) ? data.chats : [];
       const locked = !data?.canEditPremiumSettings;
@@ -6602,132 +6711,95 @@
         }).join('');
       }
 
-      const integration = data?.zjmfIntegration || { configured: false, message: '未配置魔方接口', endpoint: '' };
       const currentChat = getCurrentShopChat();
-      const mallConfig = currentChat?.pointsMallConfig || { provider: 'zjmf', custom_api_url: '', custom_api_token: '' };
-      const emptyCatalog = {
-        configured: integration.configured,
-        endpoint: integration.endpoint || '',
-        products: [],
-        cycles: {},
-        promoTypes: [],
-      };
-      if (state.shopCatalogChatId !== Number(state.shopSelectedChatId || 0)) {
-        state.zjmfCatalog = null;
-      }
-      const effectiveCatalog = state.shopCatalogChatId === Number(state.shopSelectedChatId || 0) && state.zjmfCatalog ? state.zjmfCatalog : emptyCatalog;
-      document.getElementById('shopProviderSelect').value = mallConfig.provider || 'zjmf';
-      document.getElementById('shopCustomApiUrl').value = mallConfig.custom_api_url || '';
-      document.getElementById('shopCustomApiToken').value = mallConfig.custom_api_token || '';
-      const catalogConnected = effectiveCatalog.fetchOk === true && effectiveCatalog.configured === true;
-      document.getElementById('shopCatalogStatus').value = catalogConnected ? '已连接' : (mallConfig.provider === 'off' ? '已关闭' : '未连接');
-      document.getElementById('shopIntegrationNotice').textContent = catalogConnected
-        ? `当前接口：${mallConfig.custom_api_url || integration.endpoint || '已配置'}。保存商品后，TG 用户兑换时会自动到所选接口创建优惠码。`
-        : `当前接口状态：${effectiveCatalog.fetchError || getPreferredInterfaceNotice(mallConfig, integration)}`;
+      const currentChatConfigs = getShopConfigsForChat(currentChat);
+      const allConfigs = getAllShopConfigs();
+      const allItems = getAllShopItems();
 
-      const productOptions = Array.isArray(effectiveCatalog?.products)
-        ? effectiveCatalog.products.map((item) => ({ value: String(item.id), label: `${item.name} (#${item.id})` }))
-        : [];
-      const cycleOptions = effectiveCatalog?.cycles && typeof effectiveCatalog.cycles === 'object'
-        ? Object.entries(effectiveCatalog.cycles)
-          .filter(([value, label]) => /^[a-z0-9_]+$/i.test(String(value || '')) && typeof label === 'string' && String(label).trim())
-          .map(([value, label]) => ({ value, label }))
-        : [];
-      const sourceProductOptions = [{ value: '', label: '请选择魔方商品' }, ...productOptions];
-      const newSourceProductEl = document.getElementById('shopNewSourceProductId');
-      if (newSourceProductEl instanceof HTMLSelectElement) {
-        const currentValue = newSourceProductEl.value;
-        newSourceProductEl.innerHTML = sourceProductOptions.map((option) => `<option value="${escapeHtml(String(option.value))}" ${String(option.value) === String(currentValue) ? 'selected' : ''}>${escapeHtml(String(option.label))}</option>`).join('');
+      const editingId = Number(state.shopEditingConfigId || 0);
+      const editingConfig = editingId ? allConfigs.find((cfg) => Number(cfg.id || 0) === editingId) : null;
+      const providerEl = document.getElementById('shopProviderSelect');
+      const urlEl = document.getElementById('shopCustomApiUrl');
+      const tokenEl = document.getElementById('shopCustomApiToken');
+      const nameEl = document.getElementById('shopConfigName');
+      const hintEl = document.getElementById('shopConfigEditingHint');
+      const cancelBtn = document.getElementById('cancelShopConfigEditBtn');
+      const saveBtn = document.getElementById('saveShopConfigBtn');
+      if (editingConfig) {
+        providerEl.value = editingConfig.provider || 'zjmf';
+        urlEl.value = editingConfig.custom_api_url || '';
+        tokenEl.value = editingConfig.custom_api_token || '';
+        nameEl.value = editingConfig.name || '';
+        hintEl.textContent = `正在编辑接口 #${editingConfig.id}（${getShopConfigShortLabel(editingConfig)}）`;
+        cancelBtn.classList.remove('hidden');
+        if (saveBtn) saveBtn.textContent = '保存修改';
+      } else if (state.shopEditingConfigId === 0) {
+        hintEl.textContent = '保存后会作为该群组下的一个新接口；点击下方接口卡片的「编辑」可修改已有接口。';
+        cancelBtn.classList.add('hidden');
+        if (saveBtn) saveBtn.textContent = '保存接口配置';
       }
-      document.getElementById('shopNewPromoAppliesToDropdown').innerHTML = renderMultiSelectDropdown('shopNewPromoAppliesTo', productOptions, getSelectedValues('shopNewPromoAppliesTo'), '请选择适用产品', locked);
-      document.getElementById('shopNewPromoRequiresDropdown').innerHTML = renderMultiSelectDropdown('shopNewPromoRequires', productOptions, getSelectedValues('shopNewPromoRequires'), '请选择前置产品', locked);
-      document.getElementById('shopNewPromoCyclesDropdown').innerHTML = renderMultiSelectDropdown('shopNewPromoCycles', cycleOptions, getSelectedValues('shopNewPromoCycles'), '请选择适用周期', locked);
+
+      const noticeEl = document.getElementById('shopIntegrationNotice');
+      if (noticeEl) {
+        if (!currentChatConfigs.length) {
+          noticeEl.textContent = '当前群组还没有配置任何接口，先填好上面表单点「保存接口配置」添加第一个。';
+        } else {
+          noticeEl.textContent = `该群组已配置 ${currentChatConfigs.length} 个接口。点击下方卡片「设置」打开各自的商品管理。`;
+        }
+      }
+
       document.getElementById('shopCard').classList.toggle('locked-panel', locked);
       document.getElementById('shopLockNotice').classList.toggle('hidden', !locked);
       document.getElementById('shopLockNotice').textContent = locked ? '当前没有有效订阅。积分商城属于订阅功能，开通或续费订阅后才能配置和使用。' : '';
       [
-        'shopChatSelect', 'shopProviderSelect', 'shopCustomApiUrl', 'shopCustomApiToken', 'saveShopConfigBtn', 'refreshZjmfCatalogBtn', 'shopNewSourceProductId', 'shopNewTitle', 'shopNewPointsCost', 'shopNewStock', 'shopNewSortOrder',
-        'shopNewRedeemCycle', 'shopNewRepeatMarkupPercent', 'shopNewEnabled', 'shopNewPromoScene', 'shopNewPromoType', 'shopNewPromoValue', 'shopNewDescription', 'shopNewPromoValidityMode', 'shopNewPromoStartTime',
-        'shopNewPromoExpirationTime', 'shopNewPromoRecurring', 'shopNewPromoRecurfor', 'shopNewPromoMaxTimes',
-        'shopNewPromoRequiresExist', 'shopNewPromoLifelong', 'shopNewPromoOneTime', 'shopNewPromoOnlyNewClient',
-        'shopNewPromoOnlyOldClient', 'shopNewPromoOncePerClient', 'shopNewPromoAppliesTo', 'shopNewPromoRequires', 'shopNewPromoCycles', 'shopNewPromoNotes', 'shopCreateBtn'
+        'shopChatSelect', 'shopProviderSelect', 'shopCustomApiUrl', 'shopCustomApiToken', 'shopConfigName',
+        'saveShopConfigBtn', 'cancelShopConfigEditBtn', 'refreshZjmfCatalogBtn'
       ].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.disabled = locked;
       });
 
-      const allItems = Array.isArray(currentChat?.pointsMallItems) ? currentChat.pointsMallItems : [];
-      const purchaseItems = allItems.filter((item) => String(item?.promo_scene || 'purchase') !== 'renew');
-      const renewItems = allItems.filter((item) => String(item?.promo_scene || '') === 'renew');
-      const purchaseEnabledCount = purchaseItems.filter((item) => Number(item?.enabled || 0) !== 0).length;
-      const renewEnabledCount = renewItems.filter((item) => Number(item?.enabled || 0) !== 0).length;
-      const activeScene = state.shopSceneFilter === 'renew'
-        ? 'renew'
-        : (state.shopSceneFilter === 'purchase' ? 'purchase' : (purchaseItems.length ? 'purchase' : 'renew'));
-      const items = activeScene === 'renew' ? renewItems : purchaseItems;
-      const purchaseCountEl = document.getElementById('shopScenePurchaseCount');
-      const renewCountEl = document.getElementById('shopSceneRenewCount');
-      if (purchaseCountEl) purchaseCountEl.textContent = String(purchaseEnabledCount);
-      if (renewCountEl) renewCountEl.textContent = String(renewEnabledCount);
-      const purchaseTab = document.getElementById('shopScenePurchaseTab');
-      const renewTab = document.getElementById('shopSceneRenewTab');
-      if (purchaseTab) purchaseTab.classList.toggle('active', activeScene === 'purchase');
-      if (renewTab) renewTab.classList.toggle('active', activeScene === 'renew');
-      const itemProductOptions = productOptions;
-      const itemCycleOptions = cycleOptions;
-      renderList(document.getElementById('shopItemsList'), items, (item) => `
-        <div class="shop-item-card ${isShopItemExpanded(item.id) ? 'expanded' : ''}">
-          <div class="shop-item-head">
-            <div class="shop-item-main">
-              <div class="shop-item-title">
-                <span>${escapeHtml(item.title || '未命名商品')}</span>
-                <span class="shop-item-scene-tag">${escapeHtml(getShopSceneLabel(item.promo_scene))}</span>
-              </div>
-              <div class="shop-item-summary">${escapeHtml(formatShopItemSummary(item))}</div>
-            </div>
-            <div class="shop-item-actions">
-              <span class="shop-item-status ${item.enabled ? 'ok' : 'off'}">${item.enabled ? '上架中' : '已下架'}</span>
-              <button class="toggleShopItemBtn shop-item-action-btn secondary" data-item-id="${item.id}" type="button" ${locked ? 'disabled' : ''}>${isShopItemExpanded(item.id) ? '收起' : '编辑'}</button>
-              <button class="deleteShopItemBtn shop-item-action-btn secondary" data-item-id="${item.id}" type="button" ${locked ? 'disabled' : ''}>删除</button>
-            </div>
-          </div>
-          ${isShopItemExpanded(item.id) ? `
-          <div class="grid">
-            <div class="span-4"><label for="shopItem_${item.id}_SourceProductId">魔方商品</label><select id="shopItem_${item.id}_SourceProductId" ${locked ? 'disabled' : ''}>${sourceProductOptions.map((option) => `<option value="${escapeHtml(String(option.value))}" ${String(option.value) === String(item.source_product_id || '') ? 'selected' : ''}>${escapeHtml(String(option.label))}</option>`).join('')}</select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_Title">展示标题</label><input id="shopItem_${item.id}_Title" value="${escapeHtml(item.title || '')}" placeholder="留空则默认使用上面选中的魔方商品名" ${locked ? 'disabled' : ''}></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PointsCost">积分</label><input id="shopItem_${item.id}_PointsCost" value="${escapeHtml(String(item.points_cost || 0))}" ${locked ? 'disabled' : ''}></div>
-            <div class="span-4"><label for="shopItem_${item.id}_RedeemCycle">兑换周期</label><select id="shopItem_${item.id}_RedeemCycle" ${locked ? 'disabled' : ''}><option value="none" ${item.redeem_cycle === 'none' ? 'selected' : ''}>不限</option><option value="month" ${item.redeem_cycle === 'month' ? 'selected' : ''}>月度</option><option value="quarter" ${item.redeem_cycle === 'quarter' ? 'selected' : ''}>季度</option><option value="year" ${item.redeem_cycle === 'year' ? 'selected' : ''}>年度</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_RepeatMarkupPercent">周期内重复加价%</label><input id="shopItem_${item.id}_RepeatMarkupPercent" value="${escapeHtml(String(item.repeat_markup_percent || 0))}" placeholder="如 200 表示总价变为 300%" ${locked ? 'disabled' : ''}></div>
-            <div class="span-4"><label for="shopItem_${item.id}_Stock">库存</label><input id="shopItem_${item.id}_Stock" value="${escapeHtml(String(item.stock || 0))}" ${locked ? 'disabled' : ''}></div>
-            <div class="span-4"><label for="shopItem_${item.id}_SortOrder">排序</label><input id="shopItem_${item.id}_SortOrder" value="${escapeHtml(String(item.sort_order || 0))}" ${locked ? 'disabled' : ''}></div>
-            <div class="span-4"><label for="shopItem_${item.id}_Enabled">状态</label><select id="shopItem_${item.id}_Enabled" ${locked ? 'disabled' : ''}><option value="1" ${item.enabled ? 'selected' : ''}>启用</option><option value="0" ${item.enabled ? '' : 'selected'}>停用</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoScene">优惠码场景</label><select id="shopItem_${item.id}_PromoScene" ${locked ? 'disabled' : ''}><option value="purchase" ${item.promo_scene === 'purchase' ? 'selected' : ''}>新开</option><option value="renew" ${item.promo_scene === 'renew' ? 'selected' : ''}>续期</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoType">优惠类型</label><select id="shopItem_${item.id}_PromoType" ${locked ? 'disabled' : ''}><option value="percent" ${item.promo_type === 'percent' ? 'selected' : ''}>百分比</option><option value="fixed" ${item.promo_type === 'fixed' ? 'selected' : ''}>固定金额</option><option value="override" ${item.promo_type === 'override' ? 'selected' : ''}>覆盖价格</option><option value="free" ${item.promo_type === 'free' ? 'selected' : ''}>免费/免安装</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoValue">优惠值</label><input id="shopItem_${item.id}_PromoValue" value="${escapeHtml(String(item.promo_value || 0))}" ${locked ? 'disabled' : ''}></div>
-            <div class="span-12"><label for="shopItem_${item.id}_Description">描述</label><input id="shopItem_${item.id}_Description" value="${escapeHtml(item.description || '')}" ${locked ? 'disabled' : ''}></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoStartTime">开始时间</label><input id="shopItem_${item.id}_PromoStartTime" type="date" value="${escapeHtml(formatDateInput(item.promo_start_time || ''))}" ${locked ? 'disabled' : ''}></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoExpirationTime">结束时间</label><input id="shopItem_${item.id}_PromoExpirationTime" type="date" value="${escapeHtml(formatDateInput(item.promo_expiration_time || ''))}" ${locked ? 'disabled' : ''}></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoValidityMode">快捷有效期</label><select id="shopItem_${item.id}_PromoValidityMode" ${locked ? 'disabled' : ''}><option value="default" ${item.promo_validity_mode === 'default' ? 'selected' : ''}>默认</option><option value="1d" ${item.promo_validity_mode === '1d' ? 'selected' : ''}>1天</option><option value="1w" ${item.promo_validity_mode === '1w' ? 'selected' : ''}>1周</option><option value="1m" ${item.promo_validity_mode === '1m' ? 'selected' : ''}>1个月</option><option value="1q" ${item.promo_validity_mode === '1q' ? 'selected' : ''}>1季度</option><option value="6m" ${item.promo_validity_mode === '6m' ? 'selected' : ''}>半年</option><option value="1y" ${item.promo_validity_mode === '1y' ? 'selected' : ''}>1年</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoRecurring">循环优惠</label><select id="shopItem_${item.id}_PromoRecurring" ${locked ? 'disabled' : ''}><option value="0" ${item.promo_recurring ? '' : 'selected'}>否</option><option value="1" ${item.promo_recurring ? 'selected' : ''}>是</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoRecurfor">循环次数</label><input id="shopItem_${item.id}_PromoRecurfor" value="${escapeHtml(String(item.promo_recurfor || 0))}" ${locked ? 'disabled' : ''}></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoMaxTimes">优惠码次数</label><input id="shopItem_${item.id}_PromoMaxTimes" value="${escapeHtml(String(item.promo_max_times || 0))}" ${locked ? 'disabled' : ''}></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoRequiresExist">需已有产品</label><select id="shopItem_${item.id}_PromoRequiresExist" ${locked ? 'disabled' : ''}><option value="0" ${item.promo_requires_exist ? '' : 'selected'}>否</option><option value="1" ${item.promo_requires_exist ? 'selected' : ''}>是</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoLifelong">终身优惠</label><select id="shopItem_${item.id}_PromoLifelong" ${locked ? 'disabled' : ''}><option value="0" ${item.promo_lifelong ? '' : 'selected'}>否</option><option value="1" ${item.promo_lifelong ? 'selected' : ''}>是</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoOneTime">一次性优惠</label><select id="shopItem_${item.id}_PromoOneTime" ${locked ? 'disabled' : ''}><option value="1" ${item.promo_one_time ? 'selected' : ''}>是</option><option value="0" ${item.promo_one_time ? '' : 'selected'}>否</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoOnlyNewClient">仅新用户</label><select id="shopItem_${item.id}_PromoOnlyNewClient" ${locked ? 'disabled' : ''}><option value="0" ${item.promo_only_new_client ? '' : 'selected'}>否</option><option value="1" ${item.promo_only_new_client ? 'selected' : ''}>是</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoOnlyOldClient">仅老用户</label><select id="shopItem_${item.id}_PromoOnlyOldClient" ${locked ? 'disabled' : ''}><option value="0" ${item.promo_only_old_client ? '' : 'selected'}>否</option><option value="1" ${item.promo_only_old_client ? 'selected' : ''}>是</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoOncePerClient">每人限兑一次</label><select id="shopItem_${item.id}_PromoOncePerClient" ${locked ? 'disabled' : ''}><option value="1" ${item.promo_once_per_client ? 'selected' : ''}>是</option><option value="0" ${item.promo_once_per_client ? '' : 'selected'}>否</option></select></div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoCycles">适用周期</label>${renderMultiSelectDropdown(`shopItem_${item.id}_PromoCycles`, itemCycleOptions, Array.isArray(item.promo_cycles) ? item.promo_cycles : [], '请选择适用周期', locked)}</div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoAppliesTo">适用产品</label>${renderMultiSelectDropdown(`shopItem_${item.id}_PromoAppliesTo`, itemProductOptions, Array.isArray(item.promo_appliesto) ? item.promo_appliesto.map(String) : [], '请选择适用产品', locked)}</div>
-            <div class="span-4"><label for="shopItem_${item.id}_PromoRequires">前置产品</label>${renderMultiSelectDropdown(`shopItem_${item.id}_PromoRequires`, itemProductOptions, Array.isArray(item.promo_requires) ? item.promo_requires.map(String) : [], '请选择前置产品', locked)}</div>
-            <div class="span-12"><label for="shopItem_${item.id}_PromoNotes">备注</label><textarea id="shopItem_${item.id}_PromoNotes" ${locked ? 'disabled' : ''}>${escapeHtml(item.promo_notes || '')}</textarea></div>
-          </div>
-          <div class="row" style="justify-content: flex-end;">
-            <button class="saveShopItemBtn" data-item-id="${item.id}" type="button" ${locked ? 'disabled' : ''}>保存商品</button>
-          </div>
-          ` : ''}
-        </div>
-      `);
+      const listEl = document.getElementById('shopConfigsList');
+      if (listEl) {
+        if (!allConfigs.length) {
+          listEl.innerHTML = '<div class="item muted small">还没有配置任何接口。</div>';
+        } else {
+          listEl.innerHTML = allConfigs.map((cfg) => {
+            const ownerChat = getChatForShopConfig(cfg.id) || currentChat;
+            return `<div class="item">${renderShopConfigCard(cfg, allItems, ownerChat, locked)}</div>`;
+          }).join('');
+        }
+      }
+
+      const detailId = Number(state.shopDetailConfigId || 0);
+      const detailCfg = detailId ? allConfigs.find((cfg) => Number(cfg.id || 0) === detailId) : null;
+      const mainPanel = document.getElementById('shopMainPanel');
+      const detailPanel = document.getElementById('shopDetailPanel');
+      const backBtn = document.getElementById('backToShopMainBtn');
+      const titleEl = document.getElementById('shopPageTitle');
+      const subtitleEl = document.getElementById('shopPageSubtitle');
+      if (detailCfg) {
+        const ownerChat = getChatForShopConfig(detailCfg.id) || currentChat;
+        const groupName = String(ownerChat?.title || ownerChat?.chat_id || '').trim();
+        const cfgLabel = getShopConfigShortLabel(detailCfg);
+        if (titleEl) titleEl.textContent = groupName ? `积分商城 · ${groupName} - ${cfgLabel}` : `积分商城 · ${cfgLabel}`;
+        if (subtitleEl) subtitleEl.textContent = '管理当前接口下的新增商品与已配置商品。点击右上角「返回」回到接口列表。';
+        if (mainPanel) mainPanel.classList.add('hidden');
+        if (detailPanel) {
+          detailPanel.classList.remove('hidden');
+          detailPanel.innerHTML = renderShopConfigItemsPanel(detailCfg, allItems, locked);
+        }
+        if (backBtn) backBtn.classList.remove('hidden');
+      } else {
+        if (titleEl) titleEl.textContent = '积分商城';
+        if (subtitleEl) subtitleEl.textContent = '给已绑定群组配置积分兑换商品。用户在 TG 侧兑换后，系统会自动到所选接口生成同条件优惠码。';
+        if (mainPanel) mainPanel.classList.remove('hidden');
+        if (detailPanel) {
+          detailPanel.classList.add('hidden');
+          detailPanel.innerHTML = '';
+        }
+        if (backBtn) backBtn.classList.add('hidden');
+      }
     }
 
     function renderInlineMarkdown(text) {
@@ -7357,8 +7429,10 @@
           document.getElementById('docsContent').innerHTML = `<div class="notice">${escapeHtml(error.message || '文档加载失败')}</div>`;
         });
       }
-      if (state.mainTab === 'shop' && (!state.zjmfCatalog || state.shopCatalogChatId !== Number(state.shopSelectedChatId || 0))) {
-        loadZjmfCatalog().catch(() => { });
+      if (state.mainTab === 'shop') {
+        const cfgIds = getAllShopConfigs().map((cfg) => Number(cfg.id || 0)).filter(Boolean);
+        const missing = cfgIds.some((id) => !state.shopCatalogConfigIds.includes(id));
+        if (missing) loadAllInterfaceCatalogs().catch(() => { });
       }
       syncMobileNavigation();
       syncEntitlementsPanelHeight();
@@ -8858,11 +8932,18 @@
 
     document.getElementById('shopChatSelect').addEventListener('change', async (event) => {
       state.shopSelectedChatId = Number(event.target.value || 0);
-      state.shopSceneFilter = '';
-      state.shopExpandedItemIds = [];
-      state.shopCatalogChatId = 0;
+      const editingId = Number(state.shopEditingConfigId || 0);
+      if (editingId) {
+        const ownerChat = getChatForShopConfig(editingId);
+        if (!ownerChat || Number(ownerChat.chat_id || 0) !== state.shopSelectedChatId) {
+          state.shopEditingConfigId = 0;
+          document.getElementById('shopProviderSelect').value = 'zjmf';
+          document.getElementById('shopConfigName').value = '';
+          document.getElementById('shopCustomApiUrl').value = '';
+          document.getElementById('shopCustomApiToken').value = '';
+        }
+      }
       renderPointsMall(state.me);
-      await loadZjmfCatalog();
     });
 
     document.getElementById('shopChatPills').addEventListener('click', async (event) => {
@@ -8873,19 +8954,17 @@
       const nextChatId = Number(btn.getAttribute('data-shop-chat-id') || 0);
       if (!nextChatId || nextChatId === Number(state.shopSelectedChatId || 0)) return;
       state.shopSelectedChatId = nextChatId;
-      state.shopSceneFilter = '';
-      state.shopExpandedItemIds = [];
-      state.shopCatalogChatId = 0;
-      renderPointsMall(state.me);
-      await loadZjmfCatalog();
-    });
-
-    document.getElementById('shopItemsSceneTabs').addEventListener('click', (event) => {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      const btn = target.closest('[data-shop-scene]');
-      if (!(btn instanceof HTMLButtonElement)) return;
-      state.shopSceneFilter = btn.dataset.shopScene === 'renew' ? 'renew' : 'purchase';
+      const editingId = Number(state.shopEditingConfigId || 0);
+      if (editingId) {
+        const ownerChat = getChatForShopConfig(editingId);
+        if (!ownerChat || Number(ownerChat.chat_id || 0) !== nextChatId) {
+          state.shopEditingConfigId = 0;
+          document.getElementById('shopProviderSelect').value = 'zjmf';
+          document.getElementById('shopConfigName').value = '';
+          document.getElementById('shopCustomApiUrl').value = '';
+          document.getElementById('shopCustomApiToken').value = '';
+        }
+      }
       renderPointsMall(state.me);
     });
 
@@ -8896,106 +8975,184 @@
         return;
       }
       try {
-        setStatus('正在保存接口配置...');
+        const editingId = Number(state.shopEditingConfigId || 0);
+        setStatus(editingId ? '正在保存接口配置修改...' : '正在添加接口配置...');
         const data = await request('/api/chats/points-mall/config', {
           method: 'POST',
           body: JSON.stringify({
             chatId,
+            id: editingId || undefined,
+            name: document.getElementById('shopConfigName').value.trim(),
             provider: document.getElementById('shopProviderSelect').value,
             customApiUrl: document.getElementById('shopCustomApiUrl').value.trim(),
             customApiToken: document.getElementById('shopCustomApiToken').value.trim(),
           }),
         });
         const chat = (state.me?.chats || []).find((item) => Number(item.chat_id || 0) === chatId);
-        if (chat) chat.pointsMallConfig = data.config;
-        state.zjmfCatalog = null;
-        state.shopCatalogChatId = 0;
-        await loadZjmfCatalog(true);
-        setStatus('接口配置已保存。');
+        if (chat) chat.pointsMallConfigs = data.configs || [];
+        const savedId = Number(data.config?.id || 0);
+        if (savedId) {
+          await loadInterfaceCatalog(savedId, true);
+        }
+        state.shopEditingConfigId = 0;
+        document.getElementById('shopProviderSelect').value = 'zjmf';
+        document.getElementById('shopConfigName').value = '';
+        document.getElementById('shopCustomApiUrl').value = '';
+        document.getElementById('shopCustomApiToken').value = '';
+        renderPointsMall(state.me);
+        setStatus(editingId ? '接口配置已更新。' : '接口配置已添加。');
       } catch (error) {
         setStatus(error.message || '保存接口配置失败');
       }
     });
 
+    document.getElementById('cancelShopConfigEditBtn').addEventListener('click', () => {
+      state.shopEditingConfigId = 0;
+      document.getElementById('shopProviderSelect').value = 'zjmf';
+      document.getElementById('shopConfigName').value = '';
+      document.getElementById('shopCustomApiUrl').value = '';
+      document.getElementById('shopCustomApiToken').value = '';
+      renderPointsMall(state.me);
+    });
+
     document.getElementById('refreshZjmfCatalogBtn').addEventListener('click', async () => {
-      setStatus('正在刷新魔方商品目录...');
-      await loadZjmfCatalog(true);
-      setStatus('魔方商品目录已刷新。');
+      setStatus('正在刷新接口数据...');
+      await loadAllInterfaceCatalogs(true);
+      setStatus('接口数据已刷新。');
     });
 
-    document.getElementById('shopNewSourceProductId').addEventListener('change', (event) => {
-      const productName = getZjmfProductLabelById(Number(event.target.value || 0));
-      const titleEl = document.getElementById('shopNewTitle');
-      if (titleEl instanceof HTMLInputElement && !titleEl.value.trim()) {
-        titleEl.value = productName;
-      }
-    });
-
-    document.getElementById('shopCreateBtn').addEventListener('click', async () => {
-      const chatId = Number(state.shopSelectedChatId || 0);
-      if (!chatId) {
-        setStatus('请先选择一个已绑定群组。');
-        return;
-      }
-      try {
-        setStatus('正在创建积分商城商品...');
-        const payload = buildShopItemPayload('shopNew');
-        const data = await request('/api/chats/points-mall/item/upsert', {
-          method: 'POST',
-          body: JSON.stringify({ chatId, ...payload }),
-        });
-        const chat = (state.me?.chats || []).find((item) => Number(item.chat_id || 0) === chatId);
-        if (chat) chat.pointsMallItems = data.items || [];
-        ['shopNewTitle', 'shopNewDescription', 'shopNewPointsCost', 'shopNewRepeatMarkupPercent', 'shopNewStock', 'shopNewSortOrder', 'shopNewPromoValue', 'shopNewPromoRecurfor', 'shopNewPromoStartTime', 'shopNewPromoExpirationTime', 'shopNewPromoNotes'].forEach((id) => {
-          const el = document.getElementById(id);
-          if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) el.value = '';
-        });
-        const shopNewPromoMaxTimesEl = document.getElementById('shopNewPromoMaxTimes');
-        if (shopNewPromoMaxTimesEl instanceof HTMLInputElement) shopNewPromoMaxTimesEl.value = '1';
-        ['shopNewSourceProductId', 'shopNewRedeemCycle', 'shopNewEnabled', 'shopNewPromoScene', 'shopNewPromoType', 'shopNewPromoValidityMode', 'shopNewPromoRecurring', 'shopNewPromoRequiresExist', 'shopNewPromoLifelong', 'shopNewPromoOneTime', 'shopNewPromoOnlyNewClient', 'shopNewPromoOnlyOldClient', 'shopNewPromoOncePerClient'].forEach((id) => {
-          const el = document.getElementById(id);
-          if (el instanceof HTMLSelectElement) el.selectedIndex = 0;
-        });
-        ['shopNewPromoCycles', 'shopNewPromoAppliesTo', 'shopNewPromoRequires'].forEach((id) => {
-          const el = document.getElementById(id);
-          if (el instanceof HTMLInputElement) el.value = '';
-        });
-        renderPointsMall(state.me);
-        setStatus('积分商城商品已创建。');
-      } catch (error) {
-        setStatus(error.message || '创建积分商城商品失败');
-      }
-    });
-
-    document.getElementById('shopItemsList').addEventListener('click', async (event) => {
+    const handleShopListClick = async (event) => {
       const target = event.target;
       if (!(target instanceof HTMLElement)) return;
-      const chatId = Number(state.shopSelectedChatId || 0);
-      if (!chatId) {
-        setStatus('请先选择一个已绑定群组。');
+
+      const editCfgBtn = target.closest('.editShopConfigBtn');
+      if (editCfgBtn) {
+        const configId = Number(editCfgBtn.getAttribute('data-config-id') || 0);
+        if (!configId) return;
+        const cfg = getShopConfigById(configId);
+        if (!cfg) return;
+        const ownerChat = getChatForShopConfig(configId);
+        if (ownerChat) state.shopSelectedChatId = Number(ownerChat.chat_id || 0);
+        state.shopDetailConfigId = 0;
+        state.shopEditingConfigId = configId;
+        document.getElementById('shopProviderSelect').value = cfg.provider || 'zjmf';
+        document.getElementById('shopConfigName').value = cfg.name || '';
+        document.getElementById('shopCustomApiUrl').value = cfg.custom_api_url || '';
+        document.getElementById('shopCustomApiToken').value = cfg.custom_api_token || '';
+        const foldEl = document.getElementById('shopConfigFold');
+        if (foldEl instanceof HTMLDetailsElement) foldEl.open = true;
+        renderPointsMall(state.me);
+        document.getElementById('shopConfigName').focus();
         return;
       }
-      const toggleBtn = target.closest('.toggleShopItemBtn');
-      if (toggleBtn) {
-        const itemId = Number(toggleBtn.getAttribute('data-item-id') || 0);
+
+      const openCfgBtn = target.closest('.openShopConfigBtn');
+      if (openCfgBtn) {
+        const configId = Number(openCfgBtn.getAttribute('data-config-id') || 0);
+        if (!configId) return;
+        state.shopDetailConfigId = configId;
+        state.shopSceneFilter = '';
+        state.shopExpandedItemIds = [];
+        if (!state.shopCatalogConfigIds.includes(configId)) {
+          await loadInterfaceCatalog(configId);
+        }
+        renderPointsMall(state.me);
+        return;
+      }
+
+      const deleteCfgBtn = target.closest('.deleteShopConfigBtn');
+      if (deleteCfgBtn) {
+        const configId = Number(deleteCfgBtn.getAttribute('data-config-id') || 0);
+        if (!configId) return;
+        const ownerChat = getChatForShopConfig(configId);
+        const chatId = Number(ownerChat?.chat_id || 0);
+        if (!chatId) {
+          setStatus('找不到该接口所属群组。');
+          return;
+        }
+        if (!window.confirm('确认删除该接口配置？')) return;
+        try {
+          setStatus('正在删除接口配置...');
+          const data = await request('/api/chats/points-mall/config/delete', {
+            method: 'POST',
+            body: JSON.stringify({ chatId, configId }),
+          });
+          if (ownerChat) ownerChat.pointsMallConfigs = data.configs || [];
+          setShopConfigExpanded(configId, false);
+          if (Number(state.shopEditingConfigId || 0) === configId) state.shopEditingConfigId = 0;
+          if (Number(state.shopDetailConfigId || 0) === configId) state.shopDetailConfigId = 0;
+          delete (state.zjmfCatalogs || {})[configId];
+          state.shopCatalogConfigIds = state.shopCatalogConfigIds.filter((id) => id !== configId);
+          renderPointsMall(state.me);
+          setStatus('接口配置已删除。');
+        } catch (error) {
+          setStatus(error.message || '删除接口配置失败');
+        }
+        return;
+      }
+
+      const sceneBtn = target.closest('[data-shop-scene]');
+      if (sceneBtn instanceof HTMLButtonElement) {
+        state.shopSceneFilter = sceneBtn.getAttribute('data-shop-scene') === 'renew' ? 'renew' : 'purchase';
+        renderPointsMall(state.me);
+        return;
+      }
+
+      const createBtn = target.closest('.shopCreateBtn');
+      if (createBtn) {
+        const configId = Number(createBtn.getAttribute('data-config-id') || 0);
+        if (!configId) return;
+        const ownerChat = getChatForShopConfig(configId);
+        const chatId = Number(ownerChat?.chat_id || 0);
+        if (!chatId) {
+          setStatus('找不到该接口所属群组。');
+          return;
+        }
+        const prefix = `shopCfg_${configId}_New`;
+        try {
+          setStatus('正在创建积分商城商品...');
+          const payload = buildShopItemPayload(prefix, 0, configId);
+          const data = await request('/api/chats/points-mall/item/upsert', {
+            method: 'POST',
+            body: JSON.stringify({ chatId, ...payload }),
+          });
+          if (ownerChat) ownerChat.pointsMallItems = data.items || [];
+          renderPointsMall(state.me);
+          setStatus('积分商城商品已创建。');
+        } catch (error) {
+          setStatus(error.message || '创建积分商城商品失败');
+        }
+        return;
+      }
+
+      const toggleItemBtn = target.closest('.toggleShopItemBtn');
+      if (toggleItemBtn) {
+        const itemId = Number(toggleItemBtn.getAttribute('data-item-id') || 0);
         if (!itemId) return;
         setShopItemExpanded(itemId, !isShopItemExpanded(itemId));
         renderPointsMall(state.me);
         return;
       }
-      const saveBtn = target.closest('.saveShopItemBtn');
-      if (saveBtn) {
-        const itemId = Number(saveBtn.getAttribute('data-item-id') || 0);
+
+      const saveItemBtn = target.closest('.saveShopItemBtn');
+      if (saveItemBtn) {
+        const itemId = Number(saveItemBtn.getAttribute('data-item-id') || 0);
+        const cfgId = Number(saveItemBtn.getAttribute('data-config-id') || 0);
         if (!itemId) return;
+        const ownerChat = getChatForShopConfig(cfgId) || getChatForShopItem(itemId);
+        const chatId = Number(ownerChat?.chat_id || 0);
+        if (!chatId) {
+          setStatus('找不到该商品所属群组。');
+          return;
+        }
         try {
           setStatus(`正在保存商品 #${itemId} ...`);
-          const payload = buildShopItemPayload(`shopItem_${itemId}_`, itemId);
+          const payload = buildShopItemPayload(`shopItem_${itemId}_`, itemId, cfgId);
           const data = await request('/api/chats/points-mall/item/upsert', {
             method: 'POST',
             body: JSON.stringify({ chatId, ...payload }),
           });
-          const chat = (state.me?.chats || []).find((item) => Number(item.chat_id || 0) === chatId);
-          if (chat) chat.pointsMallItems = data.items || [];
+          if (ownerChat) ownerChat.pointsMallItems = data.items || [];
           setShopItemExpanded(itemId, false);
           renderPointsMall(state.me);
           setStatus(`商品 #${itemId} 已保存。`);
@@ -9004,39 +9161,84 @@
         }
         return;
       }
-      const deleteBtn = target.closest('.deleteShopItemBtn');
-      if (!deleteBtn) return;
-      const itemId = Number(deleteBtn.getAttribute('data-item-id') || 0);
-      if (!itemId) return;
-      if (!window.confirm(`确认删除商品 #${itemId}？`)) return;
-      try {
-        setStatus(`正在删除商品 #${itemId} ...`);
-        const data = await request('/api/chats/points-mall/item/delete', {
-          method: 'POST',
-          body: JSON.stringify({ chatId, itemId }),
-        });
-        const chat = (state.me?.chats || []).find((item) => Number(item.chat_id || 0) === chatId);
-        if (chat) chat.pointsMallItems = data.items || [];
-        renderPointsMall(state.me);
-        setStatus(`商品 #${itemId} 已删除。`);
-      } catch (error) {
-        setStatus(error.message || '删除商品失败');
+
+      const deleteItemBtn = target.closest('.deleteShopItemBtn');
+      if (deleteItemBtn) {
+        const itemId = Number(deleteItemBtn.getAttribute('data-item-id') || 0);
+        if (!itemId) return;
+        const ownerChat = getChatForShopItem(itemId);
+        const chatId = Number(ownerChat?.chat_id || 0);
+        if (!chatId) {
+          setStatus('找不到该商品所属群组。');
+          return;
+        }
+        if (!window.confirm(`确认删除商品 #${itemId}？`)) return;
+        try {
+          setStatus(`正在删除商品 #${itemId} ...`);
+          const data = await request('/api/chats/points-mall/item/delete', {
+            method: 'POST',
+            body: JSON.stringify({ chatId, itemId }),
+          });
+          if (ownerChat) ownerChat.pointsMallItems = data.items || [];
+          renderPointsMall(state.me);
+          setStatus(`商品 #${itemId} 已删除。`);
+        } catch (error) {
+          setStatus(error.message || '删除商品失败');
+        }
+        return;
       }
+    };
+
+    document.getElementById('shopConfigsList').addEventListener('click', handleShopListClick);
+    document.getElementById('shopDetailPanel').addEventListener('click', handleShopListClick);
+
+    document.getElementById('backToShopMainBtn').addEventListener('click', () => {
+      state.shopDetailConfigId = 0;
+      state.shopSceneFilter = '';
+      state.shopExpandedItemIds = [];
+      renderPointsMall(state.me);
     });
 
-    document.getElementById('shopItemsList').addEventListener('change', (event) => {
+    const handleShopFoldToggle = (event) => {
+      const target = event.target;
+      if (!(target instanceof HTMLDetailsElement)) return;
+      if (!target.classList.contains('shopNewItemFold')) return;
+      const configId = Number(target.getAttribute('data-config-id') || 0);
+      if (!configId) return;
+      const current = Array.isArray(state.shopNewItemFoldOpenIds) ? state.shopNewItemFoldOpenIds.slice() : [];
+      const has = current.includes(configId);
+      if (target.open && !has) state.shopNewItemFoldOpenIds = current.concat([configId]);
+      else if (!target.open && has) state.shopNewItemFoldOpenIds = current.filter((id) => id !== configId);
+    };
+    document.getElementById('shopConfigsList').addEventListener('toggle', handleShopFoldToggle, true);
+    document.getElementById('shopDetailPanel').addEventListener('toggle', handleShopFoldToggle, true);
+
+    const handleShopListChange = (event) => {
       const target = event.target;
       if (!(target instanceof HTMLSelectElement)) return;
-      if (!/^shopItem_\d+_SourceProductId$/.test(target.id)) return;
-      const match = target.id.match(/^shopItem_(\d+)_SourceProductId$/);
-      if (!match) return;
-      const itemId = Number(match[1] || 0);
-      const titleEl = document.getElementById(`shopItem_${itemId}_Title`);
-      if (!(titleEl instanceof HTMLInputElement)) return;
-      if (!titleEl.value.trim()) {
-        titleEl.value = getZjmfProductLabelById(Number(target.value || 0));
+      const newMatch = target.id.match(/^shopCfg_(\d+)_NewSourceProductId$/);
+      if (newMatch) {
+        const configId = Number(newMatch[1] || 0);
+        const titleEl = document.getElementById(`shopCfg_${configId}_NewTitle`);
+        if (titleEl instanceof HTMLInputElement && !titleEl.value.trim()) {
+          titleEl.value = getZjmfProductLabelById(configId, Number(target.value || 0));
+        }
+        return;
       }
-    });
+      const itemMatch = target.id.match(/^shopItem_(\d+)_SourceProductId$/);
+      if (itemMatch) {
+        const itemId = Number(itemMatch[1] || 0);
+        const chat = getChatForShopItem(itemId);
+        const item = (chat?.pointsMallItems || []).find((p) => Number(p.id || 0) === itemId);
+        const titleEl = document.getElementById(`shopItem_${itemId}_Title`);
+        if (titleEl instanceof HTMLInputElement && !titleEl.value.trim()) {
+          titleEl.value = getZjmfProductLabelById(item?.config_id || 0, Number(target.value || 0));
+        }
+      }
+    };
+    document.getElementById('shopConfigsList').addEventListener('change', handleShopListChange);
+    document.getElementById('shopDetailPanel').addEventListener('change', handleShopListChange);
+
 
     document.addEventListener('change', (event) => {
       const target = event.target;

@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>创建抽奖</title>
+  <style>
+    :root {
+      --bg-deep: #15202b;
+      --bg-mid: #1c2b3a;
+      --bg-light: #243648;
+      --panel: rgba(20, 29, 38, 0.85);
+      --line: rgba(180, 200, 220, 0.18);
+      --text: #eef4fa;
+      --muted: #a9bccf;
+      --accent: #f7a84b;
+      --accent2: #5cb8ff;
+      --danger: #ff7f7f;
+      --ok: #7fe3a8;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background:
+        radial-gradient(circle at 20% -5%, rgba(247, 168, 75, 0.2), transparent 46%),
+        radial-gradient(circle at 85% 0%, rgba(92, 184, 255, 0.16), transparent 38%),
+        linear-gradient(160deg, var(--bg-deep), var(--bg-mid) 50%, var(--bg-light));
+      padding: 12px;
+      overflow-x: hidden;
+    }
+
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 16px;
+      padding: 14px;
+    }
+
+    .title {
+      font-size: 19px;
+      font-weight: 700;
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 4px;
+      line-height: 1.6;
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 0 0 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .section-title .badge {
+      background: rgba(247, 168, 75, 0.16);
+      color: var(--accent);
+      border-radius: 999px;
+      padding: 1px 8px;
+      font-size: 11px;
+    }
+
+    .error {
+      color: var(--danger);
+      font-size: 13px;
+      white-space: pre-wrap;
+      line-height: 1.6;
+      background: rgba(255, 127, 127, 0.1);
+      border: 1px solid rgba(255, 127, 127, 0.25);
+      border-radius: 10px;
+      padding: 10px 12px;
+    }
+
+    .hint {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.6;
+      margin-top: 6px;
+    }
+
+    /* 奖品行 */
+    .prize-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .prize-row select, .prize-row input, .field input, .field select, .field textarea {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--line);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .prize-row select:focus, .prize-row input:focus, .field input:focus, .field select:focus, .field textarea:focus {
+      border-color: var(--accent2);
+    }
+
+    .prize-row .grow { flex: 1 1 160px; min-width: 120px; }
+    .prize-row .small { width: 72px; }
+
+    .btn {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 13px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.07);
+      cursor: pointer;
+    }
+
+    .btn.accent {
+      background: linear-gradient(135deg, var(--accent), #d98a30);
+      border: none;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .btn.danger {
+      background: rgba(255, 127, 127, 0.12);
+      border-color: rgba(255, 127, 127, 0.35);
+      color: var(--danger);
+    }
+
+    .add-prize { width: 100%; margin-top: 2px; }
+
+    /* 条件行 */
+    .field {
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .field input, .field select, .field textarea {
+      width: 100%;
+    }
+
+    .field textarea { min-height: 54px; resize: vertical; }
+
+    .radio-group {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .radio-card {
+      flex: 1 1 0;
+      min-width: 96px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+      cursor: pointer;
+      font-size: 13px;
+      background: rgba(255, 255, 255, 0.03);
+      transition: border-color .15s, background .15s;
+    }
+
+    .radio-card.sel {
+      border-color: var(--accent);
+      background: rgba(247, 168, 75, 0.14);
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .row2 { display: flex; gap: 8px; flex-wrap: wrap; }
+    .row2 .field { flex: 1 1 30%; min-width: 110px; }
+
+    .foot {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 4px;
+      padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 12px);
+    }
+
+    .hidden { display: none !important; }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 88px;
+      background: rgba(20, 29, 38, 0.96);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 10px 18px;
+      font-size: 13px;
+      max-width: 90%;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+      z-index: 99;
+    }
+
+    .toast.show { opacity: 1; }
+  </style>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="panel">
+      <div class="title">🎁 创建群组抽奖</div>
+      <div class="sub" id="chatInfo">加载中…</div>
+    </div>
+
+    <div id="blockedPanel" class="panel hidden">
+      <div class="error" id="blockedText"></div>
+    </div>
+
+    <form id="form" class="hidden" autocomplete="off">
+      <div class="panel">
+        <div class="section-title">🎉 奖品清单 <span class="badge">中奖名额 = 各奖品数量之和</span></div>
+        <div id="prizeList"></div>
+        <button type="button" class="btn add-prize" id="addPrizeBtn">＋ 添加奖品</button>
+        <div class="hint" id="prizeHint">道具奖品选中后中奖自动激活；积分奖品开奖后自动入账。数量表示该奖品的名额数。</div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">⏰ 开奖条件</div>
+        <div class="radio-group" id="condGroup">
+          <div class="radio-card sel" data-cond="manual">手动开奖</div>
+          <div class="radio-card" data-cond="count">满人数开奖</div>
+          <div class="radio-card" data-cond="time">定时开奖</div>
+        </div>
+        <div class="field hidden" id="condCountField">
+          <label>满多少人自动开奖</label>
+          <input type="number" min="1" step="1" placeholder="例如 10" id="countValue" value="10" />
+        </div>
+        <div class="field hidden" id="condTimeField">
+          <label>开奖时间（北京时间，点击选择）</label>
+          <input type="datetime-local" step="1" id="timeAt" />
+          <div class="hint" id="timeAtHint">默认填的是当前时间，改成你想开奖的那一刻即可。</div>
+        </div>
+        <div class="hint">手动开奖：之后由发起人或管理员发送 <code>/kj</code> 开奖。</div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">🚧 参与要求（可选）</div>
+        <div class="row2">
+          <div class="field">
+            <label>发言要求（0=不要求）</label>
+            <input type="number" min="0" step="1" id="minActivity" value="0" />
+          </div>
+          <div class="field">
+            <label>参与扣积分（0=不扣）</label>
+            <input type="number" min="0" step="1" id="minPoints" value="0" />
+          </div>
+          <div class="field">
+            <label>积分下限（0=不限）</label>
+            <input type="number" min="0" step="1" id="entryMinPoints" value="0" />
+          </div>
+          <div class="field">
+            <label>积分上限（0=不限）</label>
+            <input type="number" min="0" step="1" id="entryMaxPoints" value="0" />
+          </div>
+        </div>
+        <div class="hint">与命令版一致：<code>f</code> 发言要求 / <code>j</code> 扣积分 / <code>d</code> 积分下限 / <code>x</code> 积分上限。</div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">📝 备注</div>
+        <div class="field">
+          <input type="text" id="remark" placeholder="例如：中奖后请私聊 bot 领奖（选填）" />
+        </div>
+      </div>
+    </form>
+
+    <div class="foot hidden" id="footPanel">
+      <button type="button" class="btn danger" id="cancelBtn">取消</button>
+      <button type="button" class="btn accent" id="submitBtn">✨ 发布抽奖</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    const query = new URLSearchParams(window.location.search);
+    const launch = {
+      chatId: Number(query.get("chatId") || 0),
+      ts: Number(query.get("ts") || 0),
+      sig: String(query.get("sig") || ""),
+    };
+    const initData = tg ? tg.initData : "";
+
+    const dom = {
+      chatInfo: document.getElementById("chatInfo"),
+      blockedPanel: document.getElementById("blockedPanel"),
+      blockedText: document.getElementById("blockedText"),
+      form: document.getElementById("form"),
+      prizeList: document.getElementById("prizeList"),
+      prizeHint: document.getElementById("prizeHint"),
+      addPrizeBtn: document.getElementById("addPrizeBtn"),
+      condGroup: document.getElementById("condGroup"),
+      condCountField: document.getElementById("condCountField"),
+      condTimeField: document.getElementById("condTimeField"),
+      countValue: document.getElementById("countValue"),
+      timeAt: document.getElementById("timeAt"),
+      timeAtHint: document.getElementById("timeAtHint"),
+      minActivity: document.getElementById("minActivity"),
+      minPoints: document.getElementById("minPoints"),
+      entryMinPoints: document.getElementById("entryMinPoints"),
+      entryMaxPoints: document.getElementById("entryMaxPoints"),
+      remark: document.getElementById("remark"),
+      footPanel: document.getElementById("footPanel"),
+      submitBtn: document.getElementById("submitBtn"),
+      cancelBtn: document.getElementById("cancelBtn"),
+      toast: document.getElementById("toast"),
+    };
+
+    let state = null;
+    let toastTimer = null;
+
+    function showToast(text) {
+      dom.toast.textContent = text;
+      dom.toast.classList.add("show");
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => dom.toast.classList.remove("show"), 2200);
+    }
+
+    function setFormVisible(visible) {
+      dom.form.classList.toggle("hidden", !visible);
+      dom.footPanel.classList.toggle("hidden", !visible);
+      dom.blockedPanel.classList.toggle("hidden", visible);
+    }
+
+    function drawConditionState() {
+      const sel = dom.condGroup.querySelector(".radio-card.sel");
+      const cond = sel ? sel.dataset.cond : "manual";
+      dom.condCountField.classList.toggle("hidden", cond !== "count");
+      dom.condTimeField.classList.toggle("hidden", cond !== "time");
+      // 选到「定时开奖」时，如果还没填过就把当前北京时间灌进去，发起人只需改要改的那几位
+      if (cond === "time" && !dom.timeAt.value) {
+        dom.timeAt.value = nowBeijingLocalValue();
+        syncTimeAtHint();
+      }
+    }
+
+    /**
+     * 北京时间 → datetime-local 需要的 "YYYY-MM-DDTHH:MM:SS" 文本。
+     * 不能直接用 toISOString()：那是 UTC，会比北京时间少 8 小时。
+     * 这里按固定 +8 偏移拼字符串，跟机器人后端的时区口径保持一致（北京无夏令时）。
+     */
+    function beijingParts(ms) {
+      const d = new Date(ms + 8 * 3600 * 1000);
+      const p = (n) => String(n).padStart(2, "0");
+      return {
+        y: d.getUTCFullYear(), mo: p(d.getUTCMonth() + 1), da: p(d.getUTCDate()),
+        h: p(d.getUTCHours()), mi: p(d.getUTCMinutes()), se: p(d.getUTCSeconds()),
+      };
+    }
+
+    function nowBeijingLocalValue() {
+      const t = beijingParts(Date.now());
+      return `${t.y}-${t.mo}-${t.da}T${t.h}:${t.mi}:${t.se}`;
+    }
+
+    /** 选择器里的北京时间文本 → 秒级时间戳，交给后端换算 */
+    function parseLocalDateTimeToSec(value) {
+      const m = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?$/);
+      if (!m) return 0;
+      const [, y, mo, da, h, mi, se] = m;
+      // Date.UTC 得到的是「把这串当 UTC」的时刻，再减 8 小时就是这串北京时间对应的真实 UTC 时刻
+      const ms = Date.UTC(Number(y), Number(mo) - 1, Number(da), Number(h), Number(mi), Number(se || 0)) - 8 * 3600 * 1000;
+      return Math.floor(ms / 1000);
+    }
+
+    function syncTimeAtHint() {
+      if (!dom.timeAtHint) return;
+      const sec = parseLocalDateTimeToSec(dom.timeAt.value);
+      if (!sec) {
+        dom.timeAtHint.textContent = "默认填的是当前时间，改成你想开奖的那一刻即可。";
+        return;
+      }
+      const diffMin = Math.round((sec * 1000 - Date.now()) / 60000);
+      dom.timeAtHint.textContent = diffMin <= 0
+        ? "⚠️ 这个时间已经过去了，请往后调（至少比现在晚 1 分钟）。"
+        : diffMin < 60
+          ? `约 ${diffMin} 分钟后开奖`
+          : `约 ${Math.floor(diffMin / 60)} 小时 ${diffMin % 60} 分钟后开奖`;
+    }
+
+    async function postJson(path, payload) {
+      const response = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const text = await response.text();
+      let data = null;
+      try { data = JSON.parse(text || "{}"); } catch { data = {}; }
+      if (response.ok && data && data.ok) return data;
+      throw new Error((data && (data.error || data.message)) || `请求失败(${response.status})`);
+    }
+
+    // 是否有“积分管理”授权：无授权只能创建普通奖品
+    function canUsePointsPrize() {
+      if (!state) return false;
+      if (state.permissions && typeof state.permissions.canUsePointsPrize === "boolean") {
+        return state.permissions.canUsePointsPrize;
+      }
+      return Boolean(state.canUsePointsPrize);
+    }
+
+    // ---- 奖品行管理 ----
+    // 卡密按「空行分隔」拆条：一条卡密可以是多行（账号/密码/端口/IP 等），条与条之间空一行。
+    // 这样结构化的账号信息能整块作为一条发给一个中奖者，而不是被逐行拆成多条。
+    function parseCardkeyBlocks(text) {
+      return String(text || "")
+        .replace(/\r\n/g, "\n")
+        .split(/\n[ \t]*\n+/)   // 一个或多个空行为分隔
+        .map((b) => b.trim())    // 去掉每条首尾空白，但保留条内换行
+        .filter(Boolean);
+    }
+
+    function renderPrizeRow(row, firstRender) {
+      const prize = row._prize || { type: "normal", name: "", count: 1, pointsReward: 0, propItemId: 0, cardkeys: "" };
+
+      const allowPoints = canUsePointsPrize();
+      const allowProp = allowPoints && Boolean(state && state.eligibleProps && state.eligibleProps.length);
+      if ((prize.type === "points" && !allowPoints) || (prize.type === "prop" && !allowProp)) {
+        prize.type = "normal";
+        prize.pointsReward = 0;
+        prize.propItemId = 0;
+      }
+
+      row.innerHTML = "";
+      const typeSel = document.createElement("select");
+      typeSel.className = "small";
+      const options = [
+        ["normal", "普通"],
+        ["cardkey", "卡密"],
+      ];
+      if (allowPoints) options.push(["points", "积分"]);
+      if (allowProp) options.push(["prop", "道具"]);
+      // 只有普通一种时不必展示下拉
+      typeSel.disabled = options.length <= 1;
+      for (const [v, label] of options) {
+        const o = document.createElement("option");
+        o.value = v;
+        o.textContent = label;
+        typeSel.appendChild(o);
+      }
+      typeSel.value = prize.type;
+      typeSel.addEventListener("change", () => {
+        prize.type = typeSel.value;
+        prize.pointsReward = 0;
+        prize.propItemId = 0;
+        renderPrizeRow(row);
+      });
+
+      row.appendChild(typeSel);
+
+      if (prize.type === "points") {
+        const pointsInput = document.createElement("input");
+        pointsInput.type = "number";
+        pointsInput.min = "1";
+        pointsInput.className = "grow";
+        pointsInput.placeholder = "每人奖励积分数";
+        pointsInput.value = prize.pointsReward > 0 ? prize.pointsReward : "";
+        pointsInput.addEventListener("input", () => { prize.pointsReward = Number(pointsInput.value || 0); });
+        row.appendChild(pointsInput);
+      } else if (prize.type === "prop") {
+        const propSel = document.createElement("select");
+        propSel.className = "grow";
+        const items = (state && state.eligibleProps) || [];
+        for (const it of items) {
+          const o = document.createElement("option");
+          o.value = String(it.id);
+          o.textContent = it.label;
+          propSel.appendChild(o);
+        }
+        propSel.value = prize.propItemId ? String(prize.propItemId) : (items[0] ? String(items[0].id) : "");
+        prize.propItemId = Number(propSel.value || 0);
+        propSel.addEventListener("change", () => { prize.propItemId = Number(propSel.value || 0); });
+        row.appendChild(propSel);
+      } else if (prize.type === "cardkey") {
+        // 卡密奖品：填商品名 + 卡密内容（每行一条）。名额数 = 卡密条数，自动统计。
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.className = "grow";
+        nameInput.placeholder = "商品名称，如：会员月卡";
+        nameInput.value = prize.name;
+        nameInput.addEventListener("input", () => { prize.name = nameInput.value; });
+        row.appendChild(nameInput);
+      } else {
+        const nameInput = document.createElement("input");
+        nameInput.type = "text";
+        nameInput.className = "grow";
+        nameInput.placeholder = "奖品名称，如：奶茶一杯";
+        nameInput.value = prize.name;
+        nameInput.addEventListener("input", () => { prize.name = nameInput.value; });
+        row.appendChild(nameInput);
+      }
+
+      if (prize.type === "cardkey") {
+        // 数量 = 卡密条数，只读展示，不让手填
+        const countTag = document.createElement("input");
+        countTag.type = "number";
+        countTag.className = "small";
+        countTag.disabled = true;
+        countTag.title = "名额 = 卡密条数，自动统计";
+        const keyCount = parseCardkeyBlocks(prize.cardkeys).length;
+        countTag.value = keyCount || "";
+        countTag.placeholder = "名额";
+        row.appendChild(countTag);
+        row._cardkeyCountTag = countTag;
+      } else {
+        const countInput = document.createElement("input");
+        countInput.type = "number";
+        countInput.min = "1";
+        countInput.step = "1";
+        countInput.className = "small";
+        countInput.placeholder = "数量";
+        countInput.value = prize.count > 0 ? prize.count : 1;
+        countInput.addEventListener("input", () => { prize.count = Math.max(1, Number(countInput.value || 1)); });
+        row.appendChild(countInput);
+      }
+
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "btn danger";
+      delBtn.textContent = "✕";
+      delBtn.addEventListener("click", () => row.remove());
+      row.appendChild(delBtn);
+
+      // 卡密内容输入框：单独占一行（在奖品行下方），每行一条卡密
+      if (prize.type === "cardkey") {
+        const keyWrap = document.createElement("div");
+        keyWrap.style.width = "100%";
+        keyWrap.style.marginTop = "8px";
+        const ta = document.createElement("textarea");
+        ta.className = "grow";
+        ta.rows = 6;
+        ta.style.width = "100%";
+        ta.placeholder = "一条卡密一个区块，条与条之间空一行分隔。\n单条可多行，例如：\n账号：ryty123\n密码：1111111\n端口：22\nIP：172.111.111.111\n\n账号：abcd456\n密码：2222222\n（上面是 2 条卡密，将发给 2 个中奖者）";
+        ta.value = String(prize.cardkeys || "");
+        ta.addEventListener("input", () => {
+          prize.cardkeys = ta.value;
+          const n = parseCardkeyBlocks(ta.value).length;
+          prize.count = Math.max(0, n);
+          if (row._cardkeyCountTag) row._cardkeyCountTag.value = n || "";
+        });
+        const hint = document.createElement("div");
+        hint.className = "hint";
+        hint.textContent = "一条卡密可多行（账号/密码/端口/IP…），条与条之间空一行分隔；名额 = 卡密条数。卡密仅私聊发给中奖者（点击显示的剧透效果），群内不显示。";
+        keyWrap.appendChild(ta);
+        keyWrap.appendChild(hint);
+        row.appendChild(keyWrap);
+      }
+
+      row._prize = prize;
+    }
+
+    function addPrizeRow() {
+      const row = document.createElement("div");
+      row.className = "prize-row";
+      row._prize = { type: "normal", name: "", count: 1, pointsReward: 0, propItemId: 0, cardkeys: "" };
+      renderPrizeRow(row);
+      dom.prizeList.appendChild(row);
+      return row;
+    }
+
+    // ---- 初始化 ----
+    function collectPrizes() {
+      const prizes = [];
+      const allowPoints = canUsePointsPrize();
+      dom.prizeList.querySelectorAll(".prize-row").forEach((row) => {
+        const prize = row._prize || { type: "normal", name: "", count: 1 };
+        if (prize.type === "cardkey") {
+          const name = String(prize.name || "").trim();
+          const keys = parseCardkeyBlocks(prize.cardkeys);
+          if (!name || !keys.length) return;
+          prizes.push({ name, count: keys.length, cardkeys: keys });
+          return;
+        }
+        if (!allowPoints && prize.type !== "normal") return;
+        if (prize.type === "normal") {
+          if (!String(prize.name || "").trim()) return;
+          prizes.push({ name: String(prize.name).trim(), count: Math.max(1, prize.count || 1) });
+        } else if (prize.type === "points") {
+          const pts = Math.max(1, Math.floor(Number(prize.pointsReward || 0)));
+          prizes.push({ name: `${pts}积分`, count: Math.max(1, prize.count || 1), pointsReward: pts });
+        } else {
+          const pid = Math.floor(Number(prize.propItemId || 0));
+          if (!pid) return;
+          const item = (state && state.eligibleProps || []).find((it) => Number(it.id) === pid);
+          prizes.push({ name: item ? item.label : `#${pid}`, count: Math.max(1, prize.count || 1), propItemId: pid });
+        }
+      });
+      return prizes;
+    }
+
+    async function submit() {
+      if (!state || !state.permissions || state.permissions.canCreate !== true) return;
+      dom.submitBtn.disabled = true;
+
+      const prizes = collectPrizes();
+      if (!prizes.length) {
+        showToast("请至少添加一个有效奖品");
+        dom.submitBtn.disabled = false;
+        return;
+      }
+
+      // 积分奖抽奖：扣的分不能比奖品还多（后端也会再拦一次，这里只是让人早点看到）
+      const entryCost = Number(dom.minPoints.value || 0);
+      const maxPointsPrize = prizes.reduce((max, p) => Math.max(max, Number(p.pointsReward || 0)), 0);
+      if (maxPointsPrize > 0 && entryCost > maxPointsPrize) {
+        showToast(`参与扣除的积分（${entryCost}）不能大于积分奖品（${maxPointsPrize}）`);
+        dom.submitBtn.disabled = false;
+        return;
+      }
+
+      const sel = dom.condGroup.querySelector(".radio-card.sel");
+      const cond = sel ? sel.dataset.cond : "manual";
+
+      const payload = {
+        initData,
+        chatId: launch.chatId,
+        ts: launch.ts,
+        sig: launch.sig,
+        spec: {
+          prizes,
+          drawCondition: cond,
+          countValue: cond === "count" ? Number(dom.countValue.value || 0) : 0,
+          timeAtSec: cond === "time" ? parseLocalDateTimeToSec(dom.timeAt.value) : 0,
+          minActivity: Number(dom.minActivity.value || 0),
+          minPoints: Number(dom.minPoints.value || 0),
+          entryMinPoints: Number(dom.entryMinPoints.value || 0),
+          entryMaxPoints: Number(dom.entryMaxPoints.value || 0) || -1,
+          remark: String(dom.remark.value || "").trim(),
+        },
+      };
+
+      try {
+        const result = await postJson("/api/lottery/create", payload);
+        created = true;
+        if (tg) {
+          tg.HapticFeedback && tg.HapticFeedback.notificationOccurred("success");
+          const okText = result.pinFailed
+            ? "抽奖已创建，但置顶失败（请确认机器人有置顶权限）"
+            : "抽奖创建成功，已发布并置顶到群里！";
+          tg.showAlert(okText, () => tg.close());
+        } else {
+          showToast(result.message || "创建成功");
+        }
+      } catch (err) {
+        if (tg) {
+          tg.HapticFeedback && tg.HapticFeedback.notificationOccurred("error");
+          tg.showAlert(String(err.message || err));
+        } else {
+          showToast(String(err.message || err));
+        }
+        dom.submitBtn.disabled = false;
+      }
+    }
+
+    async function init() {
+      if (!tg) {
+        dom.chatInfo.textContent = "请通过 Telegram 内的“创建抽奖（小程序）”按钮打开本页面。";
+        setFormVisible(false);
+        dom.blockedText.textContent = "当前为浏览器直接访问，无法完成身份校验。请从群内发送“抽奖”后点击“创建抽奖（小程序）”按钮打开。";
+        return;
+      }
+
+      if (!launch.chatId || !launch.ts || !launch.sig) {
+        dom.chatInfo.textContent = "缺少抽奖入口参数。";
+        setFormVisible(false);
+        dom.blockedText.textContent = "请回群里重新发送“抽奖”，再点击“创建抽奖（小程序）”按钮打开。";
+        return;
+      }
+
+      try {
+        state = await postJson("/api/lottery/state", {
+          initData,
+          chatId: launch.chatId,
+          ts: launch.ts,
+          sig: launch.sig,
+        });
+
+        dom.chatInfo.innerHTML = `<b>${escapeHtml(state.chatTitle || String(state.chatId))}</b> · 当前进行中 <b>${state.activeCount || 0}</b> 个抽奖`;
+
+        if (!state.permissions || !state.permissions.canCreate) {
+          setFormVisible(false);
+          dom.blockedText.textContent =
+            `当前用户 ${escapeHtml(state.me.userName || "")} 无创建权限。\n原因：${escapeHtml(state.permissions && state.permissions.denyReason || "无权限")}`;
+          return;
+        }
+
+        setFormVisible(true);
+        if (dom.prizeHint) {
+          dom.prizeHint.textContent = canUsePointsPrize()
+            ? "道具奖品选中后中奖自动激活；积分奖品开奖后自动入账。数量表示该奖品的名额数。"
+            : "你未获得积分管理授权，只能创建普通奖品。数量表示该奖品的名额数。";
+        }
+        addPrizeRow();
+
+        const ptsDisabled = !state.pointsEnabled;
+        dom.entryMinPoints.disabled = ptsDisabled;
+        dom.entryMaxPoints.disabled = ptsDisabled;
+        dom.minPoints.disabled = ptsDisabled;
+        if (ptsDisabled) {
+          dom.minPoints.disabled = true;
+        }
+      } catch (err) {
+        dom.chatInfo.textContent = "加载失败";
+        setFormVisible(false);
+        dom.blockedText.textContent = String(err.message || err);
+      }
+    }
+
+    // ---- 取消/关闭：把私聊入口消息改成“已取消”并去掉入口按钮 ----
+    // created 为 true 时（已提交成功）不再发取消，避免覆盖“创建成功”消息
+    let created = false;
+    let cancelSent = false;
+
+    function buildCancelPayload() {
+      return JSON.stringify({
+        initData,
+        chatId: launch.chatId,
+        ts: launch.ts,
+        sig: launch.sig,
+      });
+    }
+
+    function canNotifyCancel() {
+      return Boolean(initData && launch.chatId && launch.ts && launch.sig && !created && !cancelSent);
+    }
+
+    // 点「取消」按钮：正常 fetch，等服务端处理完再关闭页面
+    async function notifyCancel() {
+      if (!canNotifyCancel()) return;
+      cancelSent = true;
+      try {
+        await fetch("/api/lottery/cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: buildCancelPayload(),
+          keepalive: true,
+        });
+      } catch {
+        /* 关闭页面途中失败不再提示 */
+      }
+    }
+
+    // 点右上角 X / 页面被销毁：只能用 sendBeacon，fetch 会随 webview 一起被中断
+    function notifyCancelBeacon() {
+      if (!canNotifyCancel()) return;
+      cancelSent = true;
+      const body = buildCancelPayload();
+      try {
+        if (navigator.sendBeacon) {
+          const blob = new Blob([body], { type: "application/json" });
+          if (navigator.sendBeacon("/api/lottery/cancel", blob)) return;
+        }
+        fetch("/api/lottery/cancel", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body,
+          keepalive: true,
+        }).catch(() => { });
+      } catch {
+        /* ignore */
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+
+    // 事件绑定
+    dom.addPrizeBtn.addEventListener("click", addPrizeRow);
+    dom.condGroup.addEventListener("click", (e) => {
+      const card = e.target.closest && e.target.closest(".radio-card");
+      if (!card) return;
+      dom.condGroup.querySelectorAll(".radio-card").forEach((c) => c.classList.remove("sel"));
+      card.classList.add("sel");
+      drawConditionState();
+    });
+    dom.timeAt.addEventListener("change", syncTimeAtHint);
+    dom.timeAt.addEventListener("input", syncTimeAtHint);
+    dom.submitBtn.addEventListener("click", submit);
+    dom.cancelBtn.addEventListener("click", async () => {
+      dom.cancelBtn.disabled = true;
+      await notifyCancel();
+      if (tg) tg.close();
+      else showToast("已取消创建");
+    });
+    // 右上角 X、返回手势、webview 被销毁
+    window.addEventListener("pagehide", notifyCancelBeacon);
+    window.addEventListener("beforeunload", notifyCancelBeacon);
+
+    drawConditionState();
+    init();
+  </script>
+</body>
+</html>

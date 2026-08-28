@@ -1,0 +1,37 @@
+{
+  "name": "tg-antispam",
+  "version": "1.0.0",
+  "description": "Telegram 群组 AI 反垃圾广告机器人",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "build:release": "tsc -p tsconfig.release.json",
+    "bundle:release:test": "esbuild src/index.ts --bundle --platform=node --format=cjs --target=node22 --packages=external --minify --define:__BUYER_BUILD__=false --outfile=release/app.bundle.cjs",
+    "bundle:release:test:buyer": "esbuild src/index.ts --bundle --platform=node --format=cjs --target=node22 --packages=external --minify --define:__BUYER_BUILD__=true --outfile=release/app.bundle.buyer.cjs",
+    "obfuscate:release:test": "javascript-obfuscator release/app.bundle.cjs --output release/app.protected.cjs --compact true --string-array true --string-array-threshold 0.75 --rename-globals false --self-defending false --source-map false",
+    "obfuscate:release:test:buyer": "javascript-obfuscator release/app.bundle.buyer.cjs --output release/app.protected.buyer.cjs --compact true --string-array true --string-array-threshold 0.75 --rename-globals false --self-defending false --source-map false",
+    "release:test": "npm run build:release && npm run bundle:release:test && npm run obfuscate:release:test",
+    "release:test:buyer": "npm run build:release && npm run bundle:release:test:buyer && npm run obfuscate:release:test:buyer"
+  },
+  "dependencies": {
+    "@grammyjs/auto-retry": "^2.0.2",
+    "axios": "^1.7.0",
+    "better-sqlite3": "^11.0.0",
+    "dotenv": "^16.4.0",
+    "grammy": "^1.31.0",
+    "lunar-javascript": "^1.7.7",
+    "marked": "^17.0.6",
+    "node-cron": "^4.2.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.0",
+    "@types/node": "^22.0.0",
+    "@types/node-cron": "^3.0.11",
+    "esbuild": "^0.28.0",
+    "javascript-obfuscator": "^5.4.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}

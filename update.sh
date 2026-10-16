@@ -77,35 +77,86 @@ verify_checksum() {
   fi
 }
 
+show_help() {
+  cat <<'EOF'
+tg-antispam 买家版更新脚本
+
+用法:
+  bash update.sh              从 GitHub Release 拉取最新版本并重启
+  bash update.sh --help       显示本帮助
+
+说明:
+  · 更新在后台独立进程中执行（setsid/nohup），SSH 断开不会中断。
+  · 优先使用运行时包（buyer.runtime.tar.gz，含主程序 + web/docs/image），
+    拉不到则回退为只更新主程序二进制。
+  · 进度写入 /tmp/tg-buyer-update-worker.log，同时推送 Telegram 通知。
+  · 同一时间只允许一个更新任务。锁文件 /tmp/tg-buyer-update.lock 里记录持有者 PID，
+    持有者进程已不存在时会自动清理陈旧锁（不会永久卡住）。
+EOF
+}
+
 run_worker_detached() {
+  # 这里不再设置 TG_BUYER_UPDATE_WORKER：没有任何地方读它，worker 分支只认 --worker
   if command -v setsid >/dev/null 2>&1; then
-    setsid env TG_BUYER_UPDATE_WORKER=1 bash "$0" --worker >"${WORKER_LOG}" 2>&1 < /dev/null &
+    setsid bash "$0" --worker >"${WORKER_LOG}" 2>&1 </dev/null &
   else
-    nohup env TG_BUYER_UPDATE_WORKER=1 bash "$0" --worker >"${WORKER_LOG}" 2>&1 < /dev/null &
+    nohup bash "$0" --worker >"${WORKER_LOG}" 2>&1 </dev/null &
   fi
   echo "[update] worker started: ${WORKER_LOG}"
 }
 
-if [[ "${1:-}" != "--worker" ]]; then
-  echo "[update] scheduling detached worker..."
-  run_worker_detached
-  exit 0
-fi
+case "${1:-}" in
+  --worker) ;;
+  -h|--help|help)
+    show_help
+    exit 0
+    ;;
+  "")
+    echo "[update] scheduling detached worker..."
+    run_worker_detached
+    exit 0
+    ;;
+  *)
+    echo "[update] unknown option: $1" >&2
+    show_help
+    exit 1
+    ;;
+esac
 
 TMP_DIR="$(mktemp -d)"
-LATEST_TAG="$(fetch_latest_tag)"
 
+# 只删「本进程创建的」锁 —— 否则第二个实例退出时会把正在跑的第一个实例的锁一起删掉，
+# 锁就形同虚设（第三个实例能长驱直入）。
 cleanup() {
   rm -rf "${TMP_DIR}"
-  rm -f "${LOCK_FILE}"
+  if [[ -f "${LOCK_FILE}" ]] && [[ "$(head -n 1 "${LOCK_FILE}" 2>/dev/null || true)" == "$$" ]]; then
+    rm -f "${LOCK_FILE}"
+  fi
 }
 trap cleanup EXIT
 
-if [[ -e "${LOCK_FILE}" ]]; then
-  echo "[update] another update is running"
+# 抢锁：文件里写持有者 PID。持有者已经不存在（被 kill -9 / 机器重启 / OOM 杀掉）就清掉
+# 陈旧锁 —— 否则一次异常会让之后所有更新都卡在「another update is running」上出不来。
+acquire_lock() {
+  if [[ -e "${LOCK_FILE}" ]]; then
+    local holder
+    holder="$(head -n 1 "${LOCK_FILE}" 2>/dev/null | tr -cd '0-9' || true)"
+    if [[ -n "${holder}" ]] && kill -0 "${holder}" 2>/dev/null; then
+      echo "[update] another update is running (pid ${holder})"
+      return 1
+    fi
+    echo "[update] removing stale lock (pid ${holder:-unknown} no longer running)"
+    rm -f "${LOCK_FILE}"
+  fi
+  printf '%s\n' "$$" >"${LOCK_FILE}"
+  return 0
+}
+
+if ! acquire_lock; then
   exit 1
 fi
-touch "${LOCK_FILE}"
+
+LATEST_TAG="$(fetch_latest_tag)"
 
 mkdir -p "${RELEASE_DIR}"
 cd "${TMP_DIR}"
@@ -219,7 +270,11 @@ fi
 echo "[update] restarting pm2 process ${PROCESS_NAME}..."
 if pm2 restart "${PROCESS_NAME}" --update-env; then
   sleep 2
-  pm2 describe "${PROCESS_NAME}" >/dev/null
+  # 只做信息性检查：更新和重启其实已经成功，不能因为这条命令失败就被 set -e 直接踢出去
+  # （那样会既不通知成功、也不走回滚，买家收到的是「什么都没发生」）
+  if ! pm2 describe "${PROCESS_NAME}" >/dev/null 2>&1; then
+    echo "[update] warning: pm2 describe failed, but the restart already succeeded"
+  fi
   if [[ "${updated_mode}" == "runtime" ]]; then
     notify_tg "✅ 更新完成\n版本: ${LATEST_TAG:-未知}\n状态: 主程序和页面资源已更新并重启"
   else

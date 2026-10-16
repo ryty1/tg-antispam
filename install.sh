@@ -150,8 +150,12 @@ EOF
 clone_or_update_repo() {
   local repo_url="${1:-${DEFAULT_REPO_URL}}"
   if [[ -d "${APP_DIR}/.git" ]]; then
-    log "检测到已有仓库，执行更新"
-    git -C "${APP_DIR}" pull --ff-only
+    log "检测到已有仓库，尝试更新（失败不中断安装）"
+    # --ff-only 在买家改过仓库内文件、或上游有冲突时会失败。这不是致命错误，
+    # 后续的依赖安装与启动照常进行即可，不能让 set -e 把整个安装打断。
+    if ! git -C "${APP_DIR}" pull --ff-only; then
+      log "仓库更新失败（本地有改动或网络问题），已跳过，继续后续步骤"
+    fi
     return
   fi
 
@@ -222,6 +226,92 @@ generate_random_token() {
     return
   fi
   od -An -N24 -tx1 /dev/urandom | tr -d ' \n'
+}
+
+# 从仓库地址里解析出 owner/repo（兼容 https 与 ssh 两种写法）
+repo_slug_from_url() {
+  local url="$1"
+  url="${url%.git}"
+  url="${url%/}"
+  url="${url#https://github.com/}"
+  url="${url#http://github.com/}"
+  url="${url#git@github.com:}"
+  url="${url%/}"
+  printf "%s" "${url}"
+}
+
+# ===== 从 GitHub Release 拉取最新运行时 =====
+# install.sh 只做 git clone，拿到的是仓库里「上次提交时」的二进制 —— 实测那份可能落后几个月，
+# 买家一键装完跑的是旧版本。所以 clone 之后再从 Release 拉一次，保证装完就是最新。
+# 优先运行时包（含主程序 + web/docs/image），拉不到则回退只换主程序。
+# 任何一步失败都只告警、不中断安装（退回 clone 下来的那份），不影响首次部署。
+fetch_latest_release_runtime() {
+  local repo_url="$1"
+  local slug
+  slug="$(repo_slug_from_url "${repo_url}")"
+  # 必须是严格的 owner/repo —— 否则会拼出一个无效 URL 去请求，白等一次超时
+  if [[ ! "${slug}" =~ ^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$ ]]; then
+    log "仓库地址不是 GitHub 的 owner/repo 形式（${slug}），跳过拉取最新版本"
+    return 0
+  fi
+
+  local base_url="https://github.com/${slug}/releases/latest/download"
+  local runtime_pkg="buyer.runtime.tar.gz"
+  local bin_name="app.protected.buyer.cjs"
+  local tmp_dir
+  tmp_dir="$(mktemp -d)"
+  local extract_dir="${tmp_dir}/extract"
+
+  log "从 Release 拉取最新版本: ${slug}"
+
+  # ---- 优先：运行时包（主程序 + 页面资源一起更新）----
+  if curl -fL --retry 3 --retry-delay 2 --max-time 300 "${base_url}/${runtime_pkg}" -o "${tmp_dir}/${runtime_pkg}" \
+    && curl -fL --retry 3 --retry-delay 2 --max-time 60 "${base_url}/${runtime_pkg}.sha256" -o "${tmp_dir}/${runtime_pkg}.sha256"; then
+    if (cd "${tmp_dir}" && sha256sum -c "${runtime_pkg}.sha256" >/dev/null 2>&1); then
+      mkdir -p "${extract_dir}"
+      if tar -xzf "${tmp_dir}/${runtime_pkg}" -C "${extract_dir}" 2>/dev/null \
+        && [[ -f "${extract_dir}/release/${bin_name}" ]]; then
+        mkdir -p "${APP_DIR}/release"
+        install -m 0644 "${extract_dir}/release/${bin_name}" "${APP_DIR}/release/${bin_name}"
+        if [[ -d "${extract_dir}/web" ]]; then
+          mkdir -p "${APP_DIR}/web"
+          cp -a "${extract_dir}/web/." "${APP_DIR}/web/"
+        fi
+        if [[ -d "${extract_dir}/docs" ]]; then
+          mkdir -p "${APP_DIR}/docs"
+          cp -a "${extract_dir}/docs/." "${APP_DIR}/docs/"
+        fi
+        if [[ -d "${extract_dir}/image" ]]; then
+          mkdir -p "${APP_DIR}/image"
+          cp -a "${extract_dir}/image/." "${APP_DIR}/image/"
+        fi
+        log "已安装 Release 最新版本（运行时包，含页面资源）"
+        rm -rf "${tmp_dir}"
+        return 0
+      fi
+      log "运行时包内容不完整，回退到只更新主程序"
+    else
+      log "运行时包 sha256 校验失败，回退到只更新主程序"
+    fi
+  else
+    log "未取到运行时包（Release 未上传或网络不可达），回退到只更新主程序"
+  fi
+
+  # ---- 回退：只拉主程序二进制 ----
+  if curl -fL --retry 3 --retry-delay 2 --max-time 300 "${base_url}/${bin_name}" -o "${tmp_dir}/${bin_name}" \
+    && curl -fL --retry 3 --retry-delay 2 --max-time 60 "${base_url}/${bin_name}.sha256" -o "${tmp_dir}/${bin_name}.sha256"; then
+    if (cd "${tmp_dir}" && sha256sum -c "${bin_name}.sha256" >/dev/null 2>&1); then
+      mkdir -p "${APP_DIR}/release"
+      install -m 0644 "${tmp_dir}/${bin_name}" "${APP_DIR}/release/${bin_name}"
+      log "已安装 Release 最新主程序（未含页面资源更新）"
+    else
+      log "主程序 sha256 校验失败，保留 clone 下来的版本"
+    fi
+  else
+    log "拉取最新版本失败（Release 不可用或网络不通），保留 clone 下来的版本"
+  fi
+  rm -rf "${tmp_dir}"
+  return 0
 }
 
 configure_nginx_reverse_proxy() {
@@ -347,7 +437,11 @@ configure_env_interactive() {
   local existing_ai_pool_2
   local existing_ai_pool_3
   local existing_ai_pool_4
+  local existing_ai_vision_pool_1
+  local existing_ai_vision_pool_2
   local existing_ai_chat_pool_1
+  local existing_ai_chat_pool_2
+  local existing_ai_vision_tiers
   local existing_blacklist_api_token
 
   existing_bot_token="$(read_existing_env_value BOT_TOKEN)"
@@ -359,7 +453,11 @@ configure_env_interactive() {
   existing_ai_pool_2="$(read_existing_env_value AI_POOL_2)"
   existing_ai_pool_3="$(read_existing_env_value AI_POOL_3)"
   existing_ai_pool_4="$(read_existing_env_value AI_POOL_4)"
+  existing_ai_vision_pool_1="$(read_existing_env_value AI_VISION_POOL_1)"
+  existing_ai_vision_pool_2="$(read_existing_env_value AI_VISION_POOL_2)"
   existing_ai_chat_pool_1="$(read_existing_env_value AI_CHAT_POOL_1)"
+  existing_ai_chat_pool_2="$(read_existing_env_value AI_CHAT_POOL_2)"
+  existing_ai_vision_tiers="$(read_existing_env_value AI_VISION_ACTIVITY_TIERS)"
   existing_blacklist_api_token="$(read_existing_env_value BLACKLIST_API_TOKEN)"
 
   local bot_token
@@ -375,12 +473,17 @@ configure_env_interactive() {
   local ai_pool_2
   local ai_pool_3
   local ai_pool_4
+  local ai_vision_pool_1
+  local ai_vision_pool_2
   local ai_chat_pool_1
+  local ai_chat_pool_2
+  local ai_vision_tiers
   local ai_max_concurrency
   local blacklist_api_token
   local existing_https_web_base_url
   local reverse_proxy_mode
   local proxy_choice
+  local preserved_extra
 
   log "开始在线配置（只问必要项）"
   bot_token="$(prompt_keep_existing "请输入机器人令牌（在 @BotFather 获取）" "${existing_bot_token}")"
@@ -414,23 +517,45 @@ configure_env_interactive() {
     esac
   done
 
+  # AI 接口分三池（源码 src/ai.ts:290-292）：
+  #   AI_POOL_*        检测池 —— 纯文本消息
+  #   AI_VISION_POOL_* 视觉池 —— 带图片的消息（不配则带图消息回退检测池，图片广告检测基本失效）
+  #   AI_CHAT_POOL_*   闲聊池 —— 群员与机器人闲聊（不配则复用检测池）
+  # 每池可配 1..20 条，格式：地址|密钥[,密钥2]|模型[,模型2][|风格 chat/responses/systemone]
   read -r -p "是否自定义 AI 接口配置？[y/N]: " use_custom_ai || true
   use_custom_ai="${use_custom_ai:-N}"
   if [[ "${use_custom_ai,,}" == "y" || "${use_custom_ai,,}" == "yes" ]]; then
-    ai_pool_1="$(prompt_keep_existing "请输入 AI 接口 1（格式：地址|密钥|模型|可选风格）" "${existing_ai_pool_1}")"
-    ai_pool_2="$(prompt_keep_existing "可选：请输入 AI 接口 2（回车跳过）" "${existing_ai_pool_2}")"
-    ai_pool_3="$(prompt_keep_existing "可选：请输入 AI 接口 3（回车跳过）" "${existing_ai_pool_3}")"
-    ai_pool_4="$(prompt_keep_existing "可选：请输入 AI 接口 4（回车跳过）" "${existing_ai_pool_4}")"
-    ai_chat_pool_1="$(prompt_keep_existing "可选：群内闲聊专用接口 AI_CHAT_POOL_1（回车跳过，留空则复用检测接口）" "${existing_ai_chat_pool_1}")"
-    [[ -n "${ai_pool_1}" ]] || die "至少需要填写一个 AI 接口"
+    log "接口格式：地址|密钥[,密钥2]|模型[,模型2][|风格]"
+    log "  地址示例：https://api.openai.com/v1   或   https://api.cloudflare.com/client/v4/accounts/<账号ID>/ai/v1"
+    log "  风格可选 chat / responses / systemone（Cloudflare Clef 决策模型用 systemone，普通接口不填）"
+    ai_pool_1="$(prompt_keep_existing "请输入检测接口 1（纯文本消息用，必填）" "${existing_ai_pool_1}")"
+    ai_pool_2="$(prompt_keep_existing "可选：检测接口 2（回车跳过）" "${existing_ai_pool_2}")"
+    ai_pool_3="$(prompt_keep_existing "可选：检测接口 3（回车跳过）" "${existing_ai_pool_3}")"
+    ai_pool_4="$(prompt_keep_existing "可选：检测接口 4（回车跳过）" "${existing_ai_pool_4}")"
+    ai_vision_pool_1="$(prompt_keep_existing "可选：视觉接口 1 AI_VISION_POOL_1（带图消息专用；留空则带图消息回退检测接口，图片广告检测会大幅失效）" "${existing_ai_vision_pool_1}")"
+    ai_vision_pool_2="$(prompt_keep_existing "可选：视觉接口 2 AI_VISION_POOL_2（回车跳过）" "${existing_ai_vision_pool_2}")"
+    ai_chat_pool_1="$(prompt_keep_existing "可选：闲聊接口 1 AI_CHAT_POOL_1（群员与机器人闲聊；留空则复用检测接口）" "${existing_ai_chat_pool_1}")"
+    ai_chat_pool_2="$(prompt_keep_existing "可选：闲聊接口 2 AI_CHAT_POOL_2（回车跳过）" "${existing_ai_chat_pool_2}")"
+    ai_vision_tiers="$(prompt_keep_existing "可选：视觉检测的活跃度门槛 AI_VISION_ACTIVITY_TIERS（new_low=仅新用户/低活跃成员，all=全部成员）" "${existing_ai_vision_tiers}")"
+    [[ -n "${ai_pool_1}" ]] || die "至少需要填写一个检测接口（AI_POOL_1）"
   else
-    ai_pool_1=""
-    ai_pool_2=""
-    ai_pool_3=""
-    ai_pool_4=""
-    ai_chat_pool_1=""
-    log "已留空 AI 接口配置（后续可在菜单 2 重配）"
+    # 保留原有配置 —— 这里置空会把已经配好的接口全部清掉（跑「菜单 2 重配配置」时尤其致命）
+    ai_pool_1="${existing_ai_pool_1}"
+    ai_pool_2="${existing_ai_pool_2}"
+    ai_pool_3="${existing_ai_pool_3}"
+    ai_pool_4="${existing_ai_pool_4}"
+    ai_vision_pool_1="${existing_ai_vision_pool_1}"
+    ai_vision_pool_2="${existing_ai_vision_pool_2}"
+    ai_chat_pool_1="${existing_ai_chat_pool_1}"
+    ai_chat_pool_2="${existing_ai_chat_pool_2}"
+    ai_vision_tiers="${existing_ai_vision_tiers}"
+    if [[ -n "${existing_ai_pool_1}" ]]; then
+      log "已保留原有 AI 接口配置（未改动）"
+    else
+      log "已留空 AI 接口配置（后续可在菜单 2 重配）"
+    fi
   fi
+  [[ -n "${ai_vision_tiers}" ]] || ai_vision_tiers="new_low"
 
   # 本地小模型已停用，一律走云端。并发闸门留空由程序自动取默认值（纯云端可承受更高并发）。
   ai_max_concurrency=""
@@ -452,6 +577,21 @@ configure_env_interactive() {
   webhook_url="${web_base_url}/api/telegram/webhook/${webhook_path}"
   log "已启用 Webhook（HTTPS）"
 
+  # .env 里「脚本不管理」的自定义变量（AI_POOL_5..20、AI_VISION_POOL_3..20、AI_CHAT_POOL_3..20、
+  # LICENSE_SKIP_VERIFY 以及其它调优项）必须在覆盖之前抓出来 —— 否则跑一次「菜单 2 重配配置」
+  # 会把买家手动加的东西全部抹掉。下面这份清单必须和 heredoc 里实际写入的键保持一致。
+  local known_env_keys="|BOT_TOKEN|ADMIN_USER_ID|LICENSE_SERVER_URL|LICENSE_KEY|LICENSE_CHECK_TIMEOUT_MS|LICENSE_OFFLINE_GRACE_HOURS|WEB_BASE_URL|WEB_PORT|WEBHOOK_URL|WEBHOOK_SECRET|BLACKLIST_API_TOKEN|BLACKLIST_API_PAGE_MAX|BLACKLIST_API_RATE_MAX|AI_POOL_1|AI_POOL_2|AI_POOL_3|AI_POOL_4|AI_VISION_POOL_1|AI_VISION_POOL_2|AI_VISION_ACTIVITY_TIERS|AI_CHAT_POOL_1|AI_CHAT_POOL_2|AI_MAX_CONCURRENCY|AI_TRANSLATE_ENABLED|AI_TRANSLATE_MIN_CHARS|AI_TRANSLATE_TIMEOUT_MS|AI_TRANSLATE_CACHE_TTL_MS|WEBHOOK_WORKERS|WEBHOOK_QUEUE_MAX|SESSION_QUEUE_MAX_PER_KEY|SESSION_QUEUE_MAX_GLOBAL|UPDATE_APPLY_TIMEOUT_SECONDS|"
+  preserved_extra=""
+  if [[ -f "${env_file}" ]]; then
+    preserved_extra="$(awk -v known="${known_env_keys}" '
+      /^[[:space:]]*#/ { next }
+      /^[[:space:]]*$/ { next }
+      /^[A-Za-z_][A-Za-z0-9_]*=/ {
+        k = $0; sub(/=.*/, "", k); gsub(/[[:space:]]/, "", k);
+        if (index(known, "|" k "|") == 0) print $0;
+      }' "${env_file}")"
+  fi
+
   cat >"${env_file}" <<EOF
 BOT_TOKEN=${bot_token}
 ADMIN_USER_ID=${admin_user_id}
@@ -472,15 +612,30 @@ BLACKLIST_API_TOKEN=${blacklist_api_token}
 BLACKLIST_API_PAGE_MAX=${DEFAULT_BLACKLIST_API_PAGE_MAX}
 BLACKLIST_API_RATE_MAX=${DEFAULT_BLACKLIST_API_RATE_MAX}
 
-# ===== 广告检测接口池（云端，多接口轮询，可继续往下加 AI_POOL_5...20）=====
-# 格式：地址|密钥[,密钥2]|模型[,模型2][|风格 chat/responses]
+# ===== AI 检测池（纯文本消息；云端多接口轮询，可继续往下加 AI_POOL_5...20）=====
+# 格式：地址|密钥[,密钥2]|模型[,模型2][|风格 chat/responses/systemone]
+#   chat       —— 默认，请求走 /chat/completions
+#   responses  —— 请求走 /responses
+#   systemone  —— Cloudflare Clef 决策模型（clef / clef-flash / clef-omni），走原生路由，返回概率而非文本
 AI_POOL_1=${ai_pool_1}
 AI_POOL_2=${ai_pool_2}
 AI_POOL_3=${ai_pool_3}
 AI_POOL_4=${ai_pool_4}
 
+# ===== AI 视觉池（只处理「带图片」的消息，与文本池物理隔离）=====
+# 留空则带图消息回退到上面的检测池，由「盲眼模型」逻辑兜住 —— 图片广告检测会大幅失效。
+# 可继续往下加 AI_VISION_POOL_3...20。Cloudflare Clef 视觉模型示例：
+#   AI_VISION_POOL_1=https://api.cloudflare.com/client/v4/accounts/<账号ID>/ai/v1|<token>|@cf/cloudflare/clef-omni|systemone
+AI_VISION_POOL_1=${ai_vision_pool_1}
+AI_VISION_POOL_2=${ai_vision_pool_2}
+
+# 视觉检测的活跃度门槛（逗号分隔）：new_low=新用户/低活跃，normal=普通，all=全部成员
+# 默认 new_low —— 视觉接口按次计费偏贵，只对最可能发广告的成员启用。
+AI_VISION_ACTIVITY_TIERS=${ai_vision_tiers}
+
 # ===== 群内闲聊专用池（与检测完全分开；留空则回退到上面的检测接口）=====
 AI_CHAT_POOL_1=${ai_chat_pool_1}
+AI_CHAT_POOL_2=${ai_chat_pool_2}
 
 # 全局 AI 并发闸门：留空自动取值（本地已停用，纯云端可承受更高并发）
 AI_MAX_CONCURRENCY=${ai_max_concurrency}
@@ -500,6 +655,15 @@ SESSION_QUEUE_MAX_GLOBAL=${DEFAULT_SESSION_QUEUE_MAX_GLOBAL}
 
 UPDATE_APPLY_TIMEOUT_SECONDS=${DEFAULT_UPDATE_APPLY_TIMEOUT_SECONDS}
 EOF
+
+  # 把上面抓出来的自定义变量原样补回文件末尾（脚本不管理它们，只是不让它们丢）
+  if [[ -n "${preserved_extra}" ]]; then
+    {
+      printf '\n# ===== 以下为 .env 中原有的自定义配置（脚本不管理，重配时自动保留）=====\n'
+      printf '%s\n' "${preserved_extra}"
+    } >>"${env_file}"
+    log "已保留原有自定义配置 $(printf '%s\n' "${preserved_extra}" | grep -c . ) 项"
+  fi
 
   chmod 600 "${env_file}"
 
@@ -541,7 +705,13 @@ pm2_start_or_restart() {
   pm2 start "${target}" --name "${PROCESS_NAME}" --cwd "${APP_DIR}" --update-env
 
   pm2 save
-  pm2 startup systemd -u "$(whoami)" --hp "${HOME}" >/tmp/pm2-startup.out 2>&1 || true
+  # --hp 必须用「实际跑 PM2 的那个用户」的 home。sudo 下 $HOME 可能仍是调用者的家目录
+  # （或 /root），传错会让开机自启指向错误的 PM2 目录而失效，所以直接查 passwd。
+  local pm2_user pm2_home
+  pm2_user="$(id -un)"
+  pm2_home="$(getent passwd "${pm2_user}" | cut -d: -f6)"
+  [[ -n "${pm2_home}" ]] || pm2_home="${HOME}"
+  pm2 startup systemd -u "${pm2_user}" --hp "${pm2_home}" >/tmp/pm2-startup.out 2>&1 || true
   log "PM2 已运行，查看日志: pm2 logs ${PROCESS_NAME}"
 }
 
@@ -560,6 +730,10 @@ cmd_install() {
   ensure_pm2
   clone_or_update_repo "${repo_url}"
   install_dependencies
+  # 仓库里那份二进制是「上次提交时」的，可能落后很久（实测差了 2 个月），
+  # 这里再从 Release 拉一次最新版，保证「一键安装」装完跑的就是最新。
+  # 失败只告警并退回 clone 下来的那份，不中断安装。
+  fetch_latest_release_runtime "${repo_url}"
   configure_env_interactive
   ensure_update_script_ready
   pm2_start_or_restart

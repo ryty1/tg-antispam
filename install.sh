@@ -437,6 +437,11 @@ configure_env_interactive() {
   local existing_ai_pool_2
   local existing_ai_pool_3
   local existing_ai_pool_4
+  local existing_ai_general_1
+  local existing_ai_general_2
+  local existing_ai_general_3
+  local existing_ai_general_4
+  local existing_ai_general_5
   local existing_ai_vision_pool_1
   local existing_ai_vision_pool_2
   local existing_ai_chat_pool_1
@@ -453,6 +458,11 @@ configure_env_interactive() {
   existing_ai_pool_2="$(read_existing_env_value AI_POOL_2)"
   existing_ai_pool_3="$(read_existing_env_value AI_POOL_3)"
   existing_ai_pool_4="$(read_existing_env_value AI_POOL_4)"
+  existing_ai_general_1="$(read_existing_env_value AI_GENERAL_1)"
+  existing_ai_general_2="$(read_existing_env_value AI_GENERAL_2)"
+  existing_ai_general_3="$(read_existing_env_value AI_GENERAL_3)"
+  existing_ai_general_4="$(read_existing_env_value AI_GENERAL_4)"
+  existing_ai_general_5="$(read_existing_env_value AI_GENERAL_5)"
   existing_ai_vision_pool_1="$(read_existing_env_value AI_VISION_POOL_1)"
   existing_ai_vision_pool_2="$(read_existing_env_value AI_VISION_POOL_2)"
   existing_ai_chat_pool_1="$(read_existing_env_value AI_CHAT_POOL_1)"
@@ -621,6 +631,16 @@ AI_POOL_1=${ai_pool_1}
 AI_POOL_2=${ai_pool_2}
 AI_POOL_3=${ai_pool_3}
 AI_POOL_4=${ai_pool_4}
+
+# ===== AI 通用池（文本和带图都能处理；排在专用池之后，等于「Cloudflare 全挂才回落」的兜底层）=====
+# 格式同上。可继续往下加 AI_GENERAL_6...20。
+AI_GENERAL_1=${existing_ai_general_1}
+AI_GENERAL_2=${existing_ai_general_2}
+AI_GENERAL_3=${existing_ai_general_3}
+AI_GENERAL_4=${existing_ai_general_4}
+AI_GENERAL_5=${existing_ai_general_5}
+
+# ===== AI 兜底池（AI_POOL_FALLBACK_*，只有前面所有池都不可用时才轮到）=====
 
 # ===== AI 视觉池（只处理「带图片」的消息，与文本池物理隔离）=====
 # 留空则带图消息回退到上面的检测池，由「盲眼模型」逻辑兜住 —— 图片广告检测会大幅失效。
